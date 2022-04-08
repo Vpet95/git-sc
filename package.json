@@ -1,0 +1,21 @@
+{
+  "name": "git-sc",
+  "version": "1.0.0",
+  "description": "A tool to create git branches based on existing shortcut stories",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "git",
+    "shortcut",
+    "clubhouse"
+  ],
+  "author": "Vuk Petrovic",
+  "license": "ISC",
+  "dependencies": {
+    "@useshortcut/client": "^1.0.0",
+    "commander": "^9.1.0"
+  },
+  "type": "module"
+}
