@@ -3,16 +3,14 @@
   "version": "1.0.0",
   "description": "A tool to create git branches based on existing shortcut stories",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "keywords": [
     "git",
     "shortcut",
     "clubhouse"
   ],
   "author": "Vuk Petrovic",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "commander": "^9.1.0"
   },
