@@ -1,8 +1,8 @@
-import CommandParser from "./command-parser.js";
-import { getStory, shortcutConfig } from "./shortcut-client.js";
-import { generateFromKeywords, generateName } from "./name-utils.js";
-import { createNewBranch } from "./git-utils.js";
-import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
+import CommandParser from "./src/command-parser.js";
+import { getStory, shortcutConfig } from "./src/shortcut-client.js";
+import { generateFromKeywords, generateName } from "./src/name-utils.js";
+import { createNewBranch } from "./src/git-utils.js";
+import { twinwordConfig, twinwordConfigured } from "./src/twinword-client.js";
 
 function assertSuccess(status) {
   if (!status.success) {

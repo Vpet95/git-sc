@@ -16,16 +16,22 @@ export const createNewBranch = (
     create: true,
   });
 
-  if (!result.success && overwrite) {
-    git.delete({ branchName: branchName, force: true }, errorHandler);
+  if (!result.success) {
+    if (result.output.includes("already exists")) {
+      if (overwrite)
+        git.delete({ branchName: branchName, force: true }, errorHandler);
 
-    git.checkout(
-      {
-        branchName: branchName,
-        create: true,
-      },
-      errorHandler
-    );
+      git.checkout(
+        {
+          branchName: branchName,
+          create: overwrite,
+        },
+        errorHandler
+      );
+    } else {
+      console.error(`Unexpected error from git:\n${result.output}`);
+      process.exit();
+    }
   }
 
   git.track({ remoteName: remote, branchName: branchName }, errorHandler);

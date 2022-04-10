@@ -14,8 +14,6 @@ export default class GitClient {
 
     this.location = location;
     this.debug = debug;
-
-    console.log(`Location: ${location}`);
   }
 
   do({ command, opts }, errorHandler) {

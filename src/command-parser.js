@@ -75,7 +75,7 @@ class CommandParser {
         "Your twinword API key. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used. git-sc will also look at the RAPID_HOST environment variable."
       )
       .option(
-        "--rapidapi-host <token>",
+        "--rapidapi-host <URL>",
         "Your RapidAPI Host name. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used. git-sc will also look for the TWINWORD_TOKEN environment variable."
       )
       .option(
