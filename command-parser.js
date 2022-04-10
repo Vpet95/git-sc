@@ -16,12 +16,12 @@ class CommandParser {
     };
 
     this.opts = {
-      gitDir: "",
-      parent: "",
-      remote: "",
-      update: false,
+      gitDir: __dirname,
+      parent: "develop",
+      remote: process.env.P_REMOTE || "origin",
+      update: true,
       debug: false,
-      branchPrefix: "",
+      branchPrefix: "sc",
       overwrite: false,
       twinwordApi: "",
       rapidapiHost: "",
@@ -40,13 +40,11 @@ class CommandParser {
       .argument("<story id>", "the shortcut ticket id")
       .option(
         "-d, --git-dir <path>",
-        "path to the git repository. If omitted, current directory is used",
-        __dirname
+        "path to the git repository. If omitted, current directory is used"
       )
       .option(
         "-p, --parent <branch>",
-        "the parent branch to use. **Note: this tool assumes your local and remote branches have identical names.",
-        "develop"
+        "the parent branch to use. **Note: this tool assumes your local and remote branches have identical names."
       )
       .option(
         "-u, --update",
@@ -54,8 +52,7 @@ class CommandParser {
       )
       .option(
         "-r, --remote <remote>",
-        "the name of the remote to use when updating the parent branch. Can optionally be set via P_REMOTE environment variable.",
-        process.env.P_REMOTE || "origin"
+        "the name of the remote to use when updating the parent branch. Can optionally be set via P_REMOTE environment variable."
       )
       .option(
         "-bp, --branch-prefix <prefix>",

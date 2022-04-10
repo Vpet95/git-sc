@@ -17,22 +17,19 @@ cp.parse();
 shortcutConfig(cp.shortcutAPI);
 twinwordConfig(cp.rapidapiHost, cp.twinwordAPI);
 
-cp.dump();
-
 function invokeCreate(branchName) {
-  console.log(`branchName: ${branchName}`);
-  // createNewBranch(
-  //   {
-  //     location: cp.dir,
-  //     parent: cp.parent,
-  //     remote: cp.remote,
-  //     branchName: branchName,
-  //     overwrite: cp.overwrite,
-  //     debug: cp.debug,
-  //     update: cp.update,
-  //   },
-  //   assertSuccess
-  // );
+  createNewBranch(
+    {
+      location: cp.dir,
+      parent: cp.parent,
+      remote: cp.remote,
+      branchName: branchName,
+      overwrite: cp.overwrite,
+      debug: cp.debug,
+      update: cp.update,
+    },
+    assertSuccess
+  );
 }
 
 getStory(cp.ticketId, (story) => {
