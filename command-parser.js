@@ -1,10 +1,13 @@
 import { program } from "commander";
 import { fileURLToPath } from "url";
 import { resolve, dirname } from "path";
+import fs from "fs";
 
 /* addresses `__dirname is not defined in es module scope` error */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 
 class CommandParser {
   constructor() {
@@ -17,8 +20,13 @@ class CommandParser {
       parent: "",
       remote: "",
       update: false,
+      debug: false,
       branchPrefix: "",
       overwrite: false,
+      twinwordApi: "",
+      rapidapiHost: "",
+      shortcutApi: "",
+      limit: 0,
     };
   }
 
@@ -42,8 +50,7 @@ class CommandParser {
       )
       .option(
         "-u, --update",
-        "update the parent branch before creating the new branch",
-        false
+        "update the parent branch before creating the new branch"
       )
       .option(
         "-r, --remote <remote>",
@@ -52,18 +59,40 @@ class CommandParser {
       )
       .option(
         "-bp, --branch-prefix <prefix>",
-        "a prefix to give the branch name prior to the shortcut ticket number.",
-        "sc"
+        "a prefix to give the branch name prior to the shortcut ticket number."
       )
       .option(
         "-o, --overwrite",
-        "overwrite local branch if it already exists. NOTICE: this will discard any working changes you have",
-        false
+        "overwrite local branch if it already exists. NOTICE: this will discard any working changes you have"
+      )
+      .option(
+        "-l, --limit <count>",
+        "Limits the number of words in the resulting branch name. If omitted, or zero, all unfiltered words are included."
+      )
+      .option(
+        "--debug",
+        "Determines whether git-sc outputs status and debug messages to the console"
+      )
+      .option(
+        "--twinword-api <token>",
+        "Your twinword API key. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used. git-sc will also look at the RAPID_HOST environment variable."
+      )
+      .option(
+        "--rapidapi-host <token>",
+        "Your RapidAPI Host name. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used. git-sc will also look for the TWINWORD_TOKEN environment variable."
+      )
+      .option(
+        "--shortcut-api <token>",
+        "Your Shortcut API token. This parameter is required. git-sc will also look for the SC_TOKEN environment variable"
+      )
+      .option(
+        "-c, --config",
+        "Path to a configuration JSON file containing git-sc options"
       );
 
     program.parse();
 
-    this.args.scTicket = program.args[0];
+    this.args.scTicket = parseInt(program.args[0], 10);
 
     if (isNaN(this.args.scTicket)) {
       console.error(
@@ -73,8 +102,49 @@ class CommandParser {
       process.exit();
     }
 
+    /* Grab these options first, overwrite with options supplied on the commandline */
+    if (program.opts().config) {
+      try {
+        Object.assign(
+          this.opts,
+          JSON.parse(fs.readFileSync(program.opts().config))
+        );
+      } catch (e) {
+        console.error(
+          `Could not parse options from configuration file ${
+            program.opts().config
+          }\n${e.message}`
+        );
+        process.exit();
+      }
+    } else {
+      /* look for a configuration file in the current directory */
+      try {
+        let rawData = fs.readFileSync(`./${DEFAULT_CONFIG_FILENAME}`);
+
+        try {
+          Object.assign(this.opts, JSON.parse(rawData));
+        } catch (e) {
+          console.error(
+            `Could not parse JSON from configuration file ${resolve(
+              `./${DEFAULT_CONFIG_FILENAME}`
+            )}`
+          );
+        }
+      } catch (e) {
+        /* Do nothing, means there's probably no config file */
+      }
+    }
+
     Object.assign(this.opts, program.opts());
     this.opts.gitDir = resolve(this.opts.gitDir);
+
+    if (this.opts.limit < 0) {
+      console.log(
+        `Invalid value for 'limit' (${this.opts.limit}), defaulting to no limit`
+      );
+      this.opts.limit = 0;
+    }
   }
 
   get ticketId() {
@@ -105,8 +175,32 @@ class CommandParser {
     return this.opts.overwrite;
   }
 
+  get limit() {
+    return this.opts.limit;
+  }
+
+  get debug() {
+    return this.opts.debug;
+  }
+
+  get twinwordAPI() {
+    return this.opts.twinwordApi;
+  }
+
+  get rapidapiHost() {
+    return this.opts.rapidapiHost;
+  }
+
+  get shortcutAPI() {
+    return this.opts.shortcutApi;
+  }
+
   toString(pretty = false) {
     return JSON.stringify({ ...this.args, ...this.opts }, null, pretty ? 2 : 0);
+  }
+
+  dump() {
+    console.log(this.toString(true));
   }
 }
 
