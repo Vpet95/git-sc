@@ -1,9 +1,5 @@
 import { execSync } from "child_process";
 
-/* Disclaimer: I initally opted to use a robust Node.js git client, but the ones I could find either had 
-   limitations/missing implementations I needed, or were too complex/overkill for my needs. So we're going 
-   with childProcess.exec */
-
 export default class GitClient {
   constructor({ location, debug = false }) {
     if (!location) {
