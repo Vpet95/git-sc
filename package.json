@@ -1,5 +1,5 @@
 {
-  "name": "git-sc",
+  "name": "@vpet95/git-sc",
   "version": "1.0.0",
   "description": "A tool to create git branches based on existing shortcut stories",
   "main": "index.js",
@@ -14,5 +14,9 @@
   "dependencies": {
     "commander": "^9.1.0"
   },
+  "bin": {
+    "git-sc": "./index.js"
+  },
+  "preferGlobal": true,
   "type": "module"
 }

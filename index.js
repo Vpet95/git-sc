@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import CommandParser from "./src/command-parser.js";
 import { getStory, shortcutConfig } from "./src/shortcut-client.js";
 import { generateFromKeywords, generateName } from "./src/name-utils.js";
