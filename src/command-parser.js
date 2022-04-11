@@ -16,7 +16,7 @@ class CommandParser {
     };
 
     this.opts = {
-      gitDir: __dirname,
+      gitDir: process.cwd(),
       parent: "develop",
       remote: process.env.P_REMOTE || "origin",
       update: true,

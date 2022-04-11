@@ -1,6 +1,6 @@
 {
   "name": "@vpet95/git-sc",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A tool to create git branches based on existing shortcut stories",
   "main": "index.js",
   "scripts": {},
