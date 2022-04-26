@@ -7,7 +7,7 @@
 Use the [npm](https://www.npmjs.com/) package manager to install git-sc globally:
 
 ```bash
-npm install -g git-sc
+npm install -g @vpet95/git-sc
 ```
 
 Alternatively, you can run git-sc directly via [npx](https://www.npmjs.com/package/npx).
