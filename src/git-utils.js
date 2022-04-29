@@ -1,15 +1,24 @@
 import GitClient from "./git-client.js";
 
 export const createNewBranch = (
-  { location, parent, remote, branchName, overwrite, debug, update },
+  {
+    gitDir,
+    parent,
+    parentRemote,
+    branchName,
+    childRemote,
+    overwrite,
+    debug,
+    update,
+  },
   errorHandler
 ) => {
-  const git = new GitClient({ location: location, debug: debug });
+  const git = new GitClient({ dir: gitDir, debug: debug });
 
   git.checkout({ branchName: parent }, errorHandler);
 
   if (update)
-    git.pull({ remoteName: remote, branchName: parent }, errorHandler);
+    git.pull({ remoteName: parentRemote, branchName: parent }, errorHandler);
 
   const result = git.checkout({
     branchName: branchName,
@@ -17,9 +26,10 @@ export const createNewBranch = (
   });
 
   if (!result.success) {
-    if (result.output.includes("already exists")) {
-      if (overwrite)
-        git.delete({ branchName: branchName, force: true }, errorHandler);
+    if (result.output.includes("already exists") && overwrite) {
+      console.log(`>> OVERWRITING BRANCH`);
+
+      git.delete({ branchName: branchName, force: true }, errorHandler);
 
       git.checkout(
         {
@@ -29,10 +39,10 @@ export const createNewBranch = (
         errorHandler
       );
     } else {
-      console.error(`Unexpected error from git:\n${result.output}`);
+      console.error(`Unexpected git error:\n${result.output}`);
       process.exit();
     }
   }
 
-  git.track({ remoteName: remote, branchName: branchName }, errorHandler);
+  git.track({ remoteName: childRemote, branchName: branchName }, errorHandler);
 };

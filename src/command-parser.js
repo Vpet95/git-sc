@@ -12,13 +12,14 @@ const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 class CommandParser {
   constructor() {
     this.args = {
-      scTicket: -1,
+      ticketId: -1,
     };
 
     this.opts = {
       gitDir: process.cwd(),
       parent: "develop",
-      remote: process.env.P_REMOTE || "origin",
+      parentRemote: "origin",
+      childRemote: "",
       update: true,
       debug: false,
       branchPrefix: "sc",
@@ -51,8 +52,12 @@ class CommandParser {
         "update the parent branch before creating the new branch"
       )
       .option(
-        "-r, --remote <remote>",
-        "the name of the remote to use when updating the parent branch. Can optionally be set via P_REMOTE environment variable."
+        "-pr, --parent-remote <parent branch remote>",
+        "the name of the git remote to use when updating the parent branch."
+      )
+      .option(
+        "-cr, --child-remote <child branch remote>",
+        "the name of the git remote to use when creating and linking to the remote of you newly created branch. If omitted, uses the parent remote"
       )
       .option(
         "-bp, --branch-prefix <prefix>",
@@ -89,9 +94,9 @@ class CommandParser {
 
     program.parse();
 
-    this.args.scTicket = parseInt(program.args[0], 10);
+    this.args.ticketId = parseInt(program.args[0], 10);
 
-    if (isNaN(this.args.scTicket)) {
+    if (isNaN(this.args.ticketId)) {
       console.error(
         `Bad value (${this.args.scTicket}) supplied for <story id> - value must be valid integer`
       );
@@ -136,6 +141,9 @@ class CommandParser {
     Object.assign(this.opts, program.opts());
     this.opts.gitDir = resolve(this.opts.gitDir);
 
+    // default to the parent's remote if no child remote supplied
+    this.opts.childRemote = this.opts.childRemote || this.opts.parentRemote;
+
     if (this.opts.limit < 0) {
       console.log(
         `Invalid value for 'limit' (${this.opts.limit}), defaulting to no limit`
@@ -145,7 +153,7 @@ class CommandParser {
   }
 
   get ticketId() {
-    return this.args.scTicket;
+    return this.args.ticketId;
   }
 
   get dir() {
@@ -160,8 +168,12 @@ class CommandParser {
     return this.opts.update;
   }
 
-  get remote() {
-    return this.opts.remote;
+  get parentRemote() {
+    return this.opts.parentRemote;
+  }
+
+  get childRemote() {
+    return this.opts.childRemote;
   }
 
   get branchPrefix() {
@@ -190,6 +202,14 @@ class CommandParser {
 
   get shortcutAPI() {
     return this.opts.shortcutApi;
+  }
+
+  get options() {
+    return this.opts;
+  }
+
+  get all() {
+    return { ...this.opts, ...this.args };
   }
 
   toString(pretty = false) {

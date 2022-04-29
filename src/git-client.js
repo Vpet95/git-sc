@@ -1,19 +1,19 @@
 import { execSync } from "child_process";
 
 export default class GitClient {
-  constructor({ location, debug = false }) {
-    if (!location) {
+  constructor({ dir, debug = false }) {
+    if (!dir) {
       throw new Error(
         "GitClient must be initialized with the directory path of your git environment"
       );
     }
 
-    this.location = location;
+    this.dir = dir;
     this.debug = debug;
   }
 
   do({ command, opts }, errorHandler) {
-    let fullOpts = { cwd: this.location, ...opts };
+    let fullOpts = { cwd: this.dir, ...opts };
 
     if (this.debug) {
       console.log(
@@ -32,6 +32,7 @@ export default class GitClient {
       result.output = execSync(command, fullOpts);
       result.success = !result.output.includes("Command failed");
     } catch (e) {
+      result.output += `\n${e}`;
       result.success = false;
     }
 
@@ -57,8 +58,8 @@ export default class GitClient {
   }
 
   track({ remoteName, branchName }, errorHandler) {
-    let result = this.do({
-      command: `git push -u ${remoteName} ${branchName}`,
+    return this.do({
+      command: `git branch --set-upstream-to ${remoteName}/${branchName}`,
       errorHandler,
     });
   }

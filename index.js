@@ -16,19 +16,16 @@ function assertSuccess(status) {
 const cp = CommandParser;
 cp.parse();
 
+cp.dump();
+
 shortcutConfig(cp.shortcutAPI);
 twinwordConfig(cp.rapidapiHost, cp.twinwordAPI);
 
 function invokeCreate(branchName) {
   createNewBranch(
     {
-      location: cp.dir,
-      parent: cp.parent,
-      remote: cp.remote,
       branchName: branchName,
-      overwrite: cp.overwrite,
-      debug: cp.debug,
-      update: cp.update,
+      ...cp.options,
     },
     assertSuccess
   );

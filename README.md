@@ -36,21 +36,23 @@ Calling git-sc with `--help` will produce a list of command-line options:
 
 ```
 Options:
-  -V, --version                  output the version number
-  -d, --git-dir <path>           path to the git repository. If omitted, current directory is used
-  -p, --parent <branch>          the parent branch to use. **Note: this tool assumes your local and remote branches have identical names.
-  -u, --update                   update the parent branch before creating the new branch
-  -r, --remote <remote>          the name of the remote to use when updating the parent branch. Can optionally be set via P_REMOTE environment variable.
-  -bp, --branch-prefix <prefix>  a prefix to give the branch name prior to the shortcut ticket number.
-  -o, --overwrite                overwrite local branch if it already exists. NOTICE: this will discard any working changes you have
-  -l, --limit <count>            Limits the number of words in the resulting branch name. If omitted, or zero, all unfiltered words are included.
-  --twinword-api <token>         Your twinword API key. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used.
-                                 git-sc will also look at the RAPID_HOST environment variable.
-  --rapidapi-host <URL>        Your RapidAPI Host name. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used.
-                                 git-sc will also look for the TWINWORD_TOKEN environment variable.
-  --shortcut-api <token>         Your Shortcut API token. This parameter is required. git-sc will also look for the SC_TOKEN environment variable
-  -c, --config                   Path to a configuration JSON file containing git-sc options
-  -h, --help                     display help for command
+  -V, --version                                output the version number
+  -d, --git-dir <path>                         path to the git repository. If omitted, current directory is used
+  -p, --parent <branch>                        the parent branch to use. **Note: this tool assumes your local and remote branches have identical names.
+  -u, --update                                 update the parent branch before creating the new branch
+  -pr, --parent-remote <parent branch remote>  the name of the git remote to use when updating the parent branch.
+  -cr, --child-remote <child branch remote>    the name of the git remote to use when creating and linking to the remote of you newly created branch. If omitted, uses the parent remote
+  -bp, --branch-prefix <prefix>                a prefix to give the branch name prior to the shortcut ticket number.
+  -o, --overwrite                              overwrite local branch if it already exists. NOTICE: this will discard any working changes you have
+  -l, --limit <count>                          Limits the number of words in the resulting branch name. If omitted, or zero, all unfiltered words are included.
+  --debug                                      Determines whether git-sc outputs status and debug messages to the console
+  --twinword-api <token>                       Your twinword API key. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm
+                                               is used. git-sc will also look at the RAPID_HOST environment variable.
+  --rapidapi-host <URL>                        Your RapidAPI Host name. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering
+                                               algorithm is used. git-sc will also look for the TWINWORD_TOKEN environment variable.
+  --shortcut-api <token>                       Your Shortcut API token. This parameter is required. git-sc will also look for the SC_TOKEN environment variable
+  -c, --config                                 Path to a configuration JSON file containing git-sc options
+  -h, --help                                   display help for command
 ```
 
 #### Configuration JSON
@@ -61,7 +63,8 @@ Alternatively, git-sc can be configured with a JSON file of the following format
 {
   "gitDir": "<relative or full path>",
   "parent": "<git branch name",
-  "remote": "<remote name>",
+  "parentRemote": "<parent branch's remote name>",
+  "childRemote": "<child branch's remote name>,
   "update": true,
   "branchPrefix": "<prefix>",
   "overwrite": false,
@@ -77,8 +80,6 @@ The configuration file is specified via the `--config` option. The file can be g
 #### Environment Variables
 
 git-sc supports the following environment variables:
-
-- `P_REMOTE`: specifies the name of the git remote to use when updating the parent branch
 
 - `SC_TOKEN`: specifies the Shortcut API key
 
@@ -105,7 +106,10 @@ Some planned updates include:
 - [ ] More output name format configurability
 - [ ] Exposing more Shortcut story fields for name formatting
 - [ ] Command to easily delete branches based on shortcut story id
+- [ ] Command to clean up local branch list
+- [ ] Interactive mode / prompting
 - [ ] Rewrite git integration to make use of a more robust API
+- [ ] A validation command to check program settings and/or configuration file
 
 ## Contributing
 
