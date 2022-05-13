@@ -59,7 +59,7 @@ export default class GitClient {
 
   track({ remoteName, branchName }, errorHandler) {
     return this.do({
-      command: `git branch --set-upstream-to ${remoteName}/${branchName}`,
+      command: `git push -u ${remoteName} ${branchName}`,
       errorHandler,
     });
   }
