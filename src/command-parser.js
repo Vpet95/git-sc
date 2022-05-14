@@ -1,223 +1,77 @@
-import { program } from "commander";
-import { fileURLToPath } from "url";
-import { resolve, dirname } from "path";
-import fs from "fs";
+import { resolve } from "path";
+import * as commander from "commander";
 
-/* addresses `__dirname is not defined in es module scope` error */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
+import { getConfig } from "./config.js";
+import { initApp, createBranch } from "./app.js";
 
-const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
+const program = commander.program;
 
 class CommandParser {
   constructor() {
-    this.args = {
-      ticketId: -1,
-    };
-
-    this.opts = {
-      gitDir: process.cwd(),
-      parent: "develop",
-      parentRemote: "origin",
-      childRemote: "",
-      update: true,
-      debug: false,
-      branchPrefix: "sc",
-      overwrite: false,
-      twinwordApi: "",
-      rapidapiHost: "",
-      shortcutApi: "",
-      limit: 0,
-    };
+    this.config = getConfig();
   }
 
+  /* In this version of git-sc I decided to clean up the list of available command-line options to only those that 
+     are absolutely necessary to configure from the terminal. Everything else will be expected to be within the 
+     configuration JSON file. This is opinionated, but I expect it will be how most people use the tool anyway. */
   parse() {
     program
       .name("git-sc")
       .description(
-        "A tool to create git branches based on existing shortcut stories"
+        "A tool that blends your git and Shortcut workflows so you don't need to leave the terminal"
       )
-      .version("1.0.0")
-      .argument("<story id>", "the shortcut ticket id")
-      .option(
-        "-d, --git-dir <path>",
-        "path to the git repository. If omitted, current directory is used"
-      )
-      .option(
-        "-p, --parent <branch>",
-        "the parent branch to use. **Note: this tool assumes your local and remote branches have identical names."
-      )
-      .option(
-        "-u, --update",
-        "update the parent branch before creating the new branch"
-      )
-      .option(
-        "-pr, --parent-remote <parent branch remote>",
-        "the name of the git remote to use when updating the parent branch."
-      )
-      .option(
-        "-cr, --child-remote <child branch remote>",
-        "the name of the git remote to use when creating and linking to the remote of you newly created branch. If omitted, uses the parent remote"
-      )
-      .option(
-        "-bp, --branch-prefix <prefix>",
-        "a prefix to give the branch name prior to the shortcut ticket number."
-      )
-      .option(
-        "-o, --overwrite",
-        "overwrite local branch if it already exists. NOTICE: this will discard any working changes you have"
-      )
-      .option(
-        "-l, --limit <count>",
-        "Limits the number of words in the resulting branch name. If omitted, or zero, all unfiltered words are included."
-      )
+      .version("1.0.4")
       .option(
         "--debug",
         "Determines whether git-sc outputs status and debug messages to the console"
       )
       .option(
-        "--twinword-api <token>",
-        "Your twinword API key. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used. git-sc will also look at the RAPID_HOST environment variable."
+        "-c, --config <file>",
+        "Path to a JSON configuration file containing git-sc program options. \
+        If omitted, git-sc will look for a file named `gitscconf.json` in the current directory, \
+        then in the home directory. If no such configuration files are found, git-sc will attempt \
+        to run with reasonable defaults, if possible."
+      )
+      .hook("preAction", (thisCommand, actionCommand) => {
+        /* Loads program configuration options prior to any command action. We exclude init because init itself 
+           is supposed to generate a brand new configuration file, so it wouldn't make sense to look for existing ones */
+        if (program.opts().debug) this.config.setDebug(program.opts().debug);
+
+        if (actionCommand.name() !== "init")
+          this.config.load(program.opts().config);
+      });
+
+    const initCommand = new commander.Command("init")
+      .argument(
+        "[file name]",
+        "The name of the configuration file to generate",
+        resolve(`./${DEFAULT_CONFIG_FILENAME}`)
       )
       .option(
-        "--rapidapi-host <URL>",
-        "Your RapidAPI Host name. To generate one, go to https://rapidapi.com/twinword/api/topic-tagging/ and make a free account. If omitted, a simpler name filtering algorithm is used. git-sc will also look for the TWINWORD_TOKEN environment variable."
+        "-f, --force",
+        "Determines whether to overwrite an existing configuration file if it exists",
+        false
       )
-      .option(
-        "--shortcut-api <token>",
-        "Your Shortcut API token. This parameter is required. git-sc will also look for the SC_TOKEN environment variable"
+      .description("Generates a template JSON configuration file for git-sc")
+      .action((fileName, options, _) => {
+        initApp(fileName, options.force);
+      });
+
+    const createCommand = new commander.Command("create");
+    createCommand
+      .argument("<story id>")
+      .description(
+        "Creates a new git branch by generating a name from the given Shortcut story denoted by <story id>"
       )
-      .option(
-        "-c, --config",
-        "Path to a configuration JSON file containing git-sc options"
-      );
+      .action((storyId, _, __) => {
+        createBranch(storyId, program.opts());
+      });
+
+    program.addCommand(initCommand);
+    program.addCommand(createCommand);
 
     program.parse();
-
-    this.args.ticketId = parseInt(program.args[0], 10);
-
-    if (isNaN(this.args.ticketId)) {
-      console.error(
-        `Bad value (${this.args.scTicket}) supplied for <story id> - value must be valid integer`
-      );
-
-      process.exit();
-    }
-
-    /* Grab these options first, overwrite with options supplied on the commandline */
-    if (program.opts().config) {
-      try {
-        Object.assign(
-          this.opts,
-          JSON.parse(fs.readFileSync(program.opts().config))
-        );
-      } catch (e) {
-        console.error(
-          `Could not parse options from configuration file ${
-            program.opts().config
-          }\n${e.message}`
-        );
-        process.exit();
-      }
-    } else {
-      /* look for a configuration file in the current directory */
-      try {
-        let rawData = fs.readFileSync(`./${DEFAULT_CONFIG_FILENAME}`);
-
-        try {
-          Object.assign(this.opts, JSON.parse(rawData));
-        } catch (e) {
-          console.error(
-            `Could not parse JSON from configuration file ${resolve(
-              `./${DEFAULT_CONFIG_FILENAME}`
-            )}`
-          );
-        }
-      } catch (e) {
-        /* Do nothing, means there's probably no config file */
-      }
-    }
-
-    Object.assign(this.opts, program.opts());
-    this.opts.gitDir = resolve(this.opts.gitDir);
-
-    // default to the parent's remote if no child remote supplied
-    this.opts.childRemote = this.opts.childRemote || this.opts.parentRemote;
-
-    if (this.opts.limit < 0) {
-      console.log(
-        `Invalid value for 'limit' (${this.opts.limit}), defaulting to no limit`
-      );
-      this.opts.limit = 0;
-    }
-  }
-
-  get ticketId() {
-    return this.args.ticketId;
-  }
-
-  get dir() {
-    return this.opts.gitDir;
-  }
-
-  get parent() {
-    return this.opts.parent;
-  }
-
-  get update() {
-    return this.opts.update;
-  }
-
-  get parentRemote() {
-    return this.opts.parentRemote;
-  }
-
-  get childRemote() {
-    return this.opts.childRemote;
-  }
-
-  get branchPrefix() {
-    return this.opts.branchPrefix;
-  }
-
-  get overwrite() {
-    return this.opts.overwrite;
-  }
-
-  get limit() {
-    return this.opts.limit;
-  }
-
-  get debug() {
-    return this.opts.debug;
-  }
-
-  get twinwordAPI() {
-    return this.opts.twinwordApi;
-  }
-
-  get rapidapiHost() {
-    return this.opts.rapidapiHost;
-  }
-
-  get shortcutAPI() {
-    return this.opts.shortcutApi;
-  }
-
-  get options() {
-    return this.opts;
-  }
-
-  get all() {
-    return { ...this.opts, ...this.args };
-  }
-
-  toString(pretty = false) {
-    return JSON.stringify({ ...this.args, ...this.opts }, null, pretty ? 2 : 0);
-  }
-
-  dump() {
-    console.log(this.toString(true));
   }
 }
 
