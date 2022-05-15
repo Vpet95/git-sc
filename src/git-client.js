@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execSync, exec } from "child_process";
 
 export default class GitClient {
   constructor({ dir, debug = false }) {
@@ -82,5 +82,29 @@ export default class GitClient {
       { command: `git branch ${force ? "-D" : "-d"} ${branchName}` },
       errorHandler
     );
+  }
+
+  static isValidBranchName(name) {
+    try {
+      execSync(`git check-ref-format --branch ${name}`, {
+        stdio: "ignore",
+      });
+    } catch (e) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static isValidRefName(ref) {
+    try {
+      execSync(`git check-ref-format refs/heads/${ref}`, {
+        stdio: "ignore",
+      });
+    } catch (e) {
+      return false;
+    }
+
+    return true;
   }
 }

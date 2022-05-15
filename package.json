@@ -12,7 +12,8 @@
   "author": "Vuk Petrovic",
   "license": "MIT",
   "dependencies": {
-    "commander": "^9.1.0"
+    "commander": "^9.1.0",
+    "joi": "^17.6.0"
   },
   "bin": {
     "git-sc": "./index.js"

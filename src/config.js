@@ -1,4 +1,45 @@
-import { DEFAULT_CONFIG_FILENAME, DEFAULT_OPTIONS } from "./constants.js";
+import { resolve } from "path";
+import fs from "fs";
+import Joi from "joi";
+import {
+  DEFAULT_CONFIG_FILENAME,
+  DEFAULT_CONFIG_LOCATIONS,
+  DEFAULT_OPTIONS,
+} from "./constants.js";
+import GitClient from "./git-client.js";
+
+const refValidator = (value, helpers) => {
+  if (GitClient.isValidRefName(value)) return value;
+
+  return helpers.error("any.invalid");
+};
+
+const optionsSchema = Joi.object({
+  create: Joi.object({
+    parentBranch: Joi.string().custom((value, helpers) => {
+      if (GitClient.isValidBranchName(value)) return value;
+
+      return helpers.error("any.invalid");
+    }, "must be a valid git branch name"),
+    parentBranchRemote: Joi.string().custom(
+      refValidator,
+      "must be a valid git ref"
+    ),
+    pullLatest: Joi.boolean(),
+    topicTaggingApiKey: Joi.string().min(1), // basically, non-empty
+    rapidApiHost: Joi.string().pattern(/^.*\.rapidapi.com$/),
+    branchPrefix: Joi.string(),
+    generateNameWordLimit: Joi.number().integer().min(0),
+    overwriteExistingBranch: Joi.boolean(),
+    createAndLinkToRemote: Joi.boolean(),
+  }).with("topicTaggingApiKey", "rapidApiHost"),
+  common: Joi.object({
+    shortcutApiKey: Joi.string().required(),
+    // best we can do, really https://stackoverflow.com/a/537833/3578493
+    localGitDirectory: Joi.string().pattern(/^[^\0]+$/),
+    branchRemote: Joi.string().custom(refValidator, "must be a valid git ref"),
+  }),
+});
 
 class Config {
   configured = false;
@@ -54,6 +95,8 @@ class Config {
         process.exit();
       }
 
+      optionsSchema.validate(this.opts);
+
       this.configured = true;
       return;
     }
@@ -70,6 +113,8 @@ class Config {
 
         try {
           Object.assign(this.opts, JSON.parse(data));
+          optionsSchema.validate(this.opts);
+
           this.configured = true;
           return false;
         } catch (e) {
@@ -87,9 +132,6 @@ class Config {
       return true;
     });
   }
-
-  // todo implement
-  validate() {}
 }
 
 let config = null;

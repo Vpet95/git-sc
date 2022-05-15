@@ -73,7 +73,7 @@ export const initApp = (fileName, force = false) => {
 // apparantly isNaN will interpret the empty string as a valid number because the empty string is falsy,
 // and when coerced into a Number, takes on the value 0
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN#confusing_special-case_behavior
-export const createBranch = (storyId, createOptions) => {
+export const createBranch = (storyId) => {
   if (storyId.length === 0 || isNaN(storyId)) {
     console.error(
       `Value supplied for <story id> must be a valid integer, exiting.`
@@ -81,12 +81,12 @@ export const createBranch = (storyId, createOptions) => {
     process.exit();
   }
 
-  shortcutConfig(createOptions.shortcutApiKey);
-  twinwordConfig(createOptions.rapidApiHost, createOptions.twinwordApiKey);
+  // shortcutConfig(createOptions.shortcutApiKey);
+  // twinwordConfig(createOptions.rapidApiHost, createOptions.twinwordApiKey);
 
   console.log(
     `Calling createBranch with storyId: ${storyId}, createOptions: ${JSON.stringify(
-      createOptions,
+      getConfig().all(),
       null,
       2
     )}`
