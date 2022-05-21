@@ -55,8 +55,6 @@ class Config {
       debug: this.debug,
     });
 
-    // console.log(JSON.stringify(validationResult, null, 2));
-
     if (validationResult.error) {
       console.error("ERROR: Configured settings failed to validate.\n");
 
