@@ -1,4 +1,5 @@
 import { getKeywords } from "./twinword-client.js";
+import { getConfig } from "./config.js";
 
 // some useful part-of-speech info: https://english.stackexchange.com/questions/328961/what-type-of-words-are-the-a-of-etc-grouped-as
 
@@ -90,12 +91,19 @@ export const convertToKeywords = (name, limit, cb) => {
   });
 };
 
-export const generateName = (prefix, storyId, storyName, limit) => {
+export const generateName = (storyId, storyName) => {
+  const limit = getConfig().createOptions.generatedNameWordLimit;
   return `${prefix}${storyId}/${filterAndTransform(storyName, limit)}`;
 };
 
-export const generateFromKeywords = (prefix, storyId, storyName, limit, cb) => {
-  convertToKeywords(storyName, limit, (keywordName) => {
-    cb(`${prefix}${storyId}/${keywordName}`);
-  });
+export const generateFromKeywords = (storyId, storyName, cb) => {
+  const createOpts = getConfig().createOptions;
+
+  convertToKeywords(
+    storyName,
+    createOpts.generatedNameWordLimit,
+    (keywordName) => {
+      cb(`${createOpts.branchPrefix}${storyId}/${keywordName}`);
+    }
+  );
 };

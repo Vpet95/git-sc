@@ -17,3 +17,10 @@ export const includesAll = (source, ...values) => {
 
   return Boolean(hasEvery);
 };
+
+export const assertSuccess = (status) => {
+  if (!status.success) {
+    console.error(status.output);
+    process.exit();
+  }
+};

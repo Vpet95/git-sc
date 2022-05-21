@@ -8,11 +8,11 @@ const API_URL = new URL(
   "https://twinword-topic-tagging.p.rapidapi.com/generate/"
 );
 
-export const twinwordConfig = (rapidapiHost, apiToken) => {
+export const twinwordConfig = (rapidapiHost, apiToken, debug = false) => {
   RAPIDAPI_HOST = rapidapiHost || process.env.RAPID_HOST;
   API_KEY = apiToken || process.env.TWINWORD_TOKEN;
 
-  if (!RAPIDAPI_HOST || !API_KEY)
+  if (!RAPIDAPI_HOST || !API_KEY) {
     console.warn(
       `Missing ${!RAPIDAPI_HOST ? "RapidAPI Host" : ""} ${
         !API_KEY
@@ -22,6 +22,19 @@ export const twinwordConfig = (rapidapiHost, apiToken) => {
           : ""
       } - git-sc will use a simpler name filtering algorithm`
     );
+  } else if (debug) {
+    console.log("Twinword key tagging API configured with:");
+    console.log(
+      `RapidAPI Host: ${RAPIDAPI_HOST} ${
+        !rapidapiHost ? "(Configured via environment variable)" : ""
+      }`
+    );
+    console.log(
+      `Twinword API Key: ${API_KEY} ${
+        !apiToken ? "(Configured via environment variable)" : ""
+      }`
+    );
+  }
 };
 
 export const twinwordConfigured = () => RAPIDAPI_HOST && API_KEY;

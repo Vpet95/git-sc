@@ -88,11 +88,11 @@ class Config {
     this.debug = value;
   }
 
-  get createOpts() {
+  get createOptions() {
     return this.opts.create;
   }
 
-  get commonOpts() {
+  get commonOptions() {
     return this.opts.common;
   }
 

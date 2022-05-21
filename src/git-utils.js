@@ -1,40 +1,42 @@
 import GitClient from "./git-client.js";
+import { getConfig } from "./config.js";
 
-export const createNewBranch = (
-  {
-    gitDir,
-    parent,
-    parentRemote,
-    branchName,
-    childRemote,
-    overwrite,
-    debug,
-    update,
-  },
-  errorHandler
-) => {
-  const git = new GitClient({ dir: gitDir, debug: debug });
+export const createNewBranch = (newBranchName, errorHandler) => {
+  const config = getConfig();
+  const git = new GitClient({
+    dir: config.commonOptions.localGitDirectory,
+    debug: config.commonOptions.debug,
+  });
 
-  git.checkout({ branchName: parent }, errorHandler);
+  git.checkout({ branchName: config.createOptions.parentBranch }, errorHandler);
 
-  if (update)
-    git.pull({ remoteName: parentRemote, branchName: parent }, errorHandler);
+  if (config.createOptions.pullLatest)
+    git.pull(
+      {
+        remoteName: config.createOptions.parentBranchRemote,
+        branchName: config.createOptions.parentBranch,
+      },
+      errorHandler
+    );
 
   const result = git.checkout({
-    branchName: branchName,
+    branchName: newBranchName,
     create: true,
   });
 
   if (!result.success) {
-    if (result.output.includes("already exists") && overwrite) {
-      console.log(`>> OVERWRITING BRANCH`);
+    if (
+      result.output.includes("already exists") &&
+      config.createOptions.overwriteExistingBranch
+    ) {
+      console.warn("git-sc is OVERWRITING existing branch");
 
-      git.delete({ branchName: branchName, force: true }, errorHandler);
+      git.delete({ branchName: newBranchName, force: true }, errorHandler);
 
       git.checkout(
         {
-          branchName: branchName,
-          create: overwrite,
+          branchName: newBranchName,
+          create: true,
         },
         errorHandler
       );
@@ -44,5 +46,12 @@ export const createNewBranch = (
     }
   }
 
-  git.track({ remoteName: childRemote, branchName: branchName }, errorHandler);
+  if (config.createOptions.createLinkToRemote)
+    git.track(
+      {
+        remoteName: config.commonOptions.branchRemote,
+        branchName: newBranchName,
+      },
+      errorHandler
+    );
 };

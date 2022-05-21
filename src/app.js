@@ -1,3 +1,8 @@
+/**
+ * Core application code - throws all the libraries and utlities together;
+ * any major new features go in here
+ */
+
 import { existsSync, writeFileSync } from "fs";
 
 import { getConfig } from "./config.js";
@@ -5,15 +10,8 @@ import { getStory, shortcutConfig } from "./shortcut-client.js";
 import { generateFromKeywords, generateName } from "./name-utils.js";
 import { createNewBranch } from "./git-utils.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
-
-/* This is the core application code that throws everything together */
-
-function assertSuccess(status) {
-  if (!status.success) {
-    console.error(status.output);
-    process.exit();
-  }
-}
+import { assertSuccess } from "./utils.js";
+import { DEFAULT_CONFIG_LOCATIONS } from "./constants.js";
 
 export const initApp = (fileName, force = false) => {
   if (existsSync(fileName)) {
@@ -42,53 +40,35 @@ export const initApp = (fileName, force = false) => {
   }
 };
 
-// function invokeCreate(branchName) {
-//   createNewBranch(
-//     {
-//       branchName: branchName,
-//       ...cp.options,
-//     },
-//     assertSuccess
-//   );
-// }
-
-// getStory(cp.ticketId, (story) => {
-//   if (twinwordConfigured()) {
-//     generateFromKeywords(
-//       cp.branchPrefix,
-//       cp.ticketId,
-//       story.name,
-//       cp.limit,
-//       (branchName) => {
-//         invokeCreate(branchName);
-//       }
-//     );
-//   } else {
-//     invokeCreate(
-//       generateName(cp.branchPrefix, cp.ticketId, story.name, cp.limit)
-//     );
-//   }
-// });
-
 // apparantly isNaN will interpret the empty string as a valid number because the empty string is falsy,
 // and when coerced into a Number, takes on the value 0
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN#confusing_special-case_behavior
 export const createBranch = (storyId) => {
   if (storyId.length === 0 || isNaN(storyId)) {
     console.error(
-      `Value supplied for <story id> must be a valid integer, exiting.`
+      `Value (${storyId}) supplied for <story id> must be a valid integer, exiting.`
     );
     process.exit();
   }
 
-  // shortcutConfig(createOptions.shortcutApiKey);
-  // twinwordConfig(createOptions.rapidApiHost, createOptions.twinwordApiKey);
+  storyId = Number.parseInt(storyId, 10);
 
-  console.log(
-    `Calling createBranch with storyId: ${storyId}, createOptions: ${JSON.stringify(
-      getConfig().all(),
-      null,
-      2
-    )}`
+  const config = getConfig();
+
+  /* Configure the libraries */
+  shortcutConfig(config.commonOptions.shortcutApiKey);
+  twinwordConfig(
+    config.createOptions.rapidApiHost,
+    config.createOptions.topicTaggingApiKey
   );
+
+  getStory(storyId, (story) => {
+    if (twinwordConfigured()) {
+      generateFromKeywords(storyId, story.name, (branchName) => {
+        createNewBranch(branchName, assertSuccess);
+      });
+    } else {
+      createNewBranch(generateName(storyId, story.name), assertSuccess);
+    }
+  });
 };

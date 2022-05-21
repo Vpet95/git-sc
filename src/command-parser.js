@@ -65,7 +65,7 @@ class CommandParser {
         "Creates a new git branch by generating a name from the given Shortcut story denoted by <story id>"
       )
       .action((storyId, _, __) => {
-        createBranch(storyId, program.opts());
+        createBranch(storyId);
       });
 
     program.addCommand(initCommand);

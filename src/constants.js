@@ -9,7 +9,7 @@ export const DEFAULT_OPTIONS = {
     topicTaggingApiKey: "",
     rapidApiHost: "",
     branchPrefix: "sc",
-    generatedNameWordLimit: 0,
+    generatedNameWordLimit: 5,
     overwriteExistingBranch: false,
     createAndLinkToRemote: true,
   },
