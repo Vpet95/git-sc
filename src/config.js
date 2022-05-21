@@ -6,6 +6,7 @@ import {
   DEFAULT_CONFIG_LOCATIONS,
   DEFAULT_OPTIONS,
 } from "./constants.js";
+import { includesAny } from "./utils.js";
 import GitClient from "./git-client.js";
 
 const refValidator = (value, helpers) => {
@@ -14,6 +15,7 @@ const refValidator = (value, helpers) => {
   return helpers.error("any.invalid");
 };
 
+// we're allowing unknown fields because they shouldn't disrupt our logic
 const optionsSchema = Joi.object({
   create: Joi.object({
     parentBranch: Joi.string().custom((value, helpers) => {
@@ -29,7 +31,7 @@ const optionsSchema = Joi.object({
     topicTaggingApiKey: Joi.string().min(1), // basically, non-empty
     rapidApiHost: Joi.string().pattern(/^.*\.rapidapi.com$/),
     branchPrefix: Joi.string(),
-    generateNameWordLimit: Joi.number().integer().min(0),
+    generatedNameWordLimit: Joi.number().integer().min(0),
     overwriteExistingBranch: Joi.boolean(),
     createAndLinkToRemote: Joi.boolean(),
   }).with("topicTaggingApiKey", "rapidApiHost"),
@@ -37,7 +39,7 @@ const optionsSchema = Joi.object({
     shortcutApiKey: Joi.string().required(),
     // best we can do, really https://stackoverflow.com/a/537833/3578493
     localGitDirectory: Joi.string().pattern(/^[^\0]+$/),
-    branchRemote: Joi.string().custom(refValidator, "must be a valid git ref"),
+    branchRemote: Joi.string().custom(refValidator),
   }),
 });
 
@@ -45,6 +47,40 @@ class Config {
   configured = false;
   debug = false;
   opts = structuredClone(DEFAULT_OPTIONS);
+
+  validate() {
+    const validationResult = optionsSchema.validate(this.opts, {
+      abortEarly: false,
+      allowUnknown: true,
+      debug: this.debug,
+    });
+
+    // console.log(JSON.stringify(validationResult, null, 2));
+
+    if (validationResult.error) {
+      console.error("ERROR: Configured settings failed to validate.\n");
+
+      validationResult.error.details.map((errorDetail) => {
+        if (
+          includesAny(
+            errorDetail?.context?.label,
+            "parentBranch",
+            "parentBranchRemote",
+            "branchRemote"
+          )
+        ) {
+          console.error(
+            `"${errorDetail?.context?.label}" must be a valid git ref - see: https://stackoverflow.com/a/3651867/3578493`
+          );
+        } else {
+          console.error(errorDetail?.message);
+        }
+      });
+
+      console.error(`Your settings:\n${JSON.stringify(this.opts, null, 2)}`);
+      process.exit();
+    }
+  }
 
   get debug() {
     return this.debug;
@@ -95,7 +131,7 @@ class Config {
         process.exit();
       }
 
-      optionsSchema.validate(this.opts);
+      this.validate();
 
       this.configured = true;
       return;
@@ -113,7 +149,7 @@ class Config {
 
         try {
           Object.assign(this.opts, JSON.parse(data));
-          optionsSchema.validate(this.opts);
+          this.validate();
 
           this.configured = true;
           return false;
