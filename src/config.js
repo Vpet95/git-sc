@@ -31,7 +31,7 @@ const optionsSchema = Joi.object({
     topicTaggingApiKey: Joi.string().min(1), // basically, non-empty
     rapidApiHost: Joi.string().pattern(/^.*\.rapidapi.com$/),
     branchPrefix: Joi.string(),
-    generatedNameWordLimit: Joi.number().integer().min(0),
+    branchKeywordCountLimit: Joi.number().integer().min(0),
     overwriteExistingBranch: Joi.boolean(),
     createAndLinkToRemote: Joi.boolean(),
   }).with("topicTaggingApiKey", "rapidApiHost"),

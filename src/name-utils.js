@@ -92,7 +92,7 @@ export const convertToKeywords = (name, limit, cb) => {
 };
 
 export const generateName = (storyId, storyName) => {
-  const limit = getConfig().createOptions.generatedNameWordLimit;
+  const limit = getConfig().createOptions.branchKeywordCountLimit;
   return `${prefix}${storyId}/${filterAndTransform(storyName, limit)}`;
 };
 
@@ -101,7 +101,7 @@ export const generateFromKeywords = (storyId, storyName, cb) => {
 
   convertToKeywords(
     storyName,
-    createOpts.generatedNameWordLimit,
+    createOpts.branchKeywordCountLimit,
     (keywordName) => {
       cb(`${createOpts.branchPrefix}${storyId}/${keywordName}`);
     }

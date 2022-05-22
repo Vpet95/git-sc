@@ -28,12 +28,9 @@ export const initApp = (fileName, force = false) => {
   const output = config.describe();
 
   try {
-    if (config.debug)
-      console.log(
-        `Attempting to write the following output to file ${fileName}:\n${output}`
-      );
-
     writeFileSync(fileName, output);
+
+    console.log(`Initialized git-sc configuration file in ${fileName}`);
   } catch (e) {
     console.error(`Unable to write to file ${fileName}\n${e.message}`);
     process.exit();
