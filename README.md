@@ -29,9 +29,9 @@ Options:
   -V, --version               output the version number
   --debug                     Determines whether git-sc outputs status and debug messages to the console
   -c, --config <file>         Path to a JSON configuration file containing git-sc program options.
-                              If omitted, git-sc will look for a file named `gitscconf.json` in the
-                              current directory, then in the home directory. If no such
-                              configuration files are found, git-sc will attempt to run with
+                               If omitted, git-sc will look for a file named `gitscconf.json` in the
+                              current directory,         then in the home directory. If no such
+                              configuration files are found, git-sc will attempt         to run with
                               reasonable defaults, if possible.
   -h, --help                  display help for command
 
@@ -39,6 +39,7 @@ Commands:
   init [options] [file name]  Generates a template JSON configuration file for git-sc
   create <story id>           Creates a new git branch by generating a name from the given Shortcut story
                               denoted by <story id>
+  open [options] <story id>   Opens the given Shortcut story in the default web browser
   help [command]              display help for command
 ```
 
@@ -73,6 +74,20 @@ By default git-sc will generate branch names following this scheme:
 `<prefix><story id>/<hyphenated keywords>`
 
 You can configure the branch prefix with the `branchPrefix` field in the configuration JSON - it currently defaults to 'sc' for 'Shortcut'. It may also be helpful to configure a limit on the number of words that can appear in the hyphenated keyword list for stories with particularly long titles. To do so, set a limit via the `branchKeywordCountLimit` field.
+
+### Opening a Shortcut Ticket
+
+Use the `open` command to open a Shortcut ticket in your default browser from the terminal:
+
+```
+git-sc open <story-id>
+```
+
+This command requires knowledge of your Shortcut workspace name. You can specify it either with the `-w` or `--workspace` option, or through the configuration file via the `shortcutWorkspace` field. e.g.
+
+```
+git-sc open 12345 -w myworkspace
+```
 
 ### Configuration
 
@@ -109,7 +124,7 @@ _Subject to change on a whim, and in no particular order_ 😅
 - [ ] Command to easily delete branches based on shortcut story id
 - [ ] Command to clean up local branch list based on branch status (configurable)
 - [ ] Command to add to-dos
-- [ ] Command to open shortcut story in default browser
+- [x] Command to open shortcut story in default browser
 - [ ] Hijack `status` to include Shortcut story status
 - [ ] Hijack `commit` to send updates to Shortcut
 - [ ] Interactive mode / prompting
