@@ -2,14 +2,7 @@
 
 ✨ git-sc ✨ is a tool to help you quickly and easily integrate your [git](https://git-scm.com/) and [Shortcut](https://shortcut.com/) workflows so you never have to leave your terminal.
 
-Supported (and planned) features:
-
-- [x] Create git branches based on Shortcut stories
-- [ ] List Shortcut stories assigned to you
-- [ ] Enhanced git status to show Shortcut story status as well
-- [ ] Clean up git branches tied to completed Shortcut stories
-- [ ] Link commit messages to Shortcut stories
-- [ ] Push to-do items simultaneously to git remotes and Shortcut stories
+Note - this is still early in development and bound to contain non-backwards-compatible changes in the future.
 
 ## Installation
 
@@ -110,6 +103,7 @@ _Subject to change on a whim, and in no particular order_ 😅
 - [ ] Add unit tests
 - [ ] More robust internal and external documentation
 - [ ] More debug output
+- [ ] Configuration file versioning
 - [ ] More output name format configurability for `create`
 - [ ] Exposing more Shortcut story fields for name formatting
 - [ ] Command to easily delete branches based on shortcut story id
