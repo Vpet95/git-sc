@@ -2,6 +2,11 @@ export const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 export const DEFAULT_CONFIG_LOCATIONS = ["./", "~/"];
 
 export const DEFAULT_OPTIONS = {
+  common: {
+    shortcutApiKey: "",
+    localGitDirectory: process.cwd(),
+    branchRemote: "origin",
+  },
   create: {
     parentBranch: "develop",
     parentBranchRemote: "origin",
@@ -13,9 +18,7 @@ export const DEFAULT_OPTIONS = {
     overwriteExistingBranch: false,
     createAndLinkToRemote: true,
   },
-  common: {
-    shortcutApiKey: "",
-    localGitDirectory: process.cwd(),
-    branchRemote: "origin",
+  open: {
+    shortcutWorkspace: "",
   },
 };

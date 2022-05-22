@@ -4,14 +4,13 @@
  */
 
 import { existsSync, writeFileSync } from "fs";
-
+import open from "open";
 import { getConfig } from "./config.js";
-import { getStory, shortcutConfig } from "./shortcut-client.js";
-import { generateFromKeywords, generateName } from "./name-utils.js";
 import { createNewBranch } from "./git-utils.js";
+import { generateFromKeywords, generateName } from "./name-utils.js";
+import { getStory, shortcutConfig } from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
 import { assertSuccess } from "./utils.js";
-import { DEFAULT_CONFIG_LOCATIONS } from "./constants.js";
 
 export const initApp = (fileName, force = false) => {
   if (existsSync(fileName)) {
@@ -68,4 +67,27 @@ export const createBranch = (storyId) => {
       createNewBranch(generateName(storyId, story.name), assertSuccess);
     }
   });
+};
+
+export const openStory = (storyId, workspace = undefined) => {
+  if (storyId.length === 0 || isNaN(storyId)) {
+    console.error(
+      `Value (${storyId}) supplied for <story id> must be a valid integer, exiting.`
+    );
+    process.exit();
+  }
+
+  const config = getConfig();
+  const workspaceName = workspace || config.openOptions.shortcutWorkspace;
+
+  if (!workspaceName) {
+    console.error(
+      `Missing required shortcut workspace name - pass in either via -w option or add to your config file`
+    );
+    process.exit();
+  }
+
+  const openURL = `https://app.shortcut.com/${workspaceName}/story/${storyId}/`;
+
+  open(openURL);
 };

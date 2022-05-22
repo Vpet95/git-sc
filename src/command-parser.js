@@ -3,7 +3,7 @@ import * as commander from "commander";
 
 import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
 import { getConfig } from "./config.js";
-import { initApp, createBranch } from "./app.js";
+import { initApp, createBranch, openStory } from "./app.js";
 
 const program = commander.program;
 
@@ -68,8 +68,22 @@ class CommandParser {
         createBranch(storyId);
       });
 
+    const openCommand = new commander.Command("open");
+    openCommand
+      .argument("<story id>")
+      .option(
+        "-w, --workspace <name>",
+        "Supplies the Shortcut workspace name",
+        ""
+      )
+      .description("Opens the given Shortcut story in the default web browser")
+      .action((storyId, options, __) => {
+        openStory(storyId, options.workspace);
+      });
+
     program.addCommand(initCommand);
     program.addCommand(createCommand);
+    program.addCommand(openCommand);
 
     program.parse();
   }

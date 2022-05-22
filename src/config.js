@@ -17,6 +17,12 @@ const refValidator = (value, helpers) => {
 
 // we're allowing unknown fields because they shouldn't disrupt our logic
 const optionsSchema = Joi.object({
+  common: Joi.object({
+    shortcutApiKey: Joi.string().required(),
+    // best we can do, really https://stackoverflow.com/a/537833/3578493
+    localGitDirectory: Joi.string().pattern(/^[^\0]+$/),
+    branchRemote: Joi.string().custom(refValidator),
+  }),
   create: Joi.object({
     parentBranch: Joi.string().custom((value, helpers) => {
       if (GitClient.isValidBranchName(value)) return value;
@@ -35,11 +41,8 @@ const optionsSchema = Joi.object({
     overwriteExistingBranch: Joi.boolean(),
     createAndLinkToRemote: Joi.boolean(),
   }).with("topicTaggingApiKey", "rapidApiHost"),
-  common: Joi.object({
-    shortcutApiKey: Joi.string().required(),
-    // best we can do, really https://stackoverflow.com/a/537833/3578493
-    localGitDirectory: Joi.string().pattern(/^[^\0]+$/),
-    branchRemote: Joi.string().custom(refValidator),
+  open: Joi.object({
+    shortcutWorkspace: Joi.string().allow(""),
   }),
 });
 
@@ -94,6 +97,10 @@ class Config {
 
   get commonOptions() {
     return this.opts.common;
+  }
+
+  get openOptions() {
+    return this.opts.open;
   }
 
   all() {
