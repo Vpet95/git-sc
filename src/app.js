@@ -69,6 +69,13 @@ export const createBranch = (storyId) => {
   });
 };
 
+export const deleteBranch = (storyId) => {
+  console.log(storyId);
+
+  const config = getConfig();
+  console.log(JSON.stringify(config.deleteOptions, null, 2));
+};
+
 export const openStory = (storyId, workspace = undefined) => {
   if (storyId.length === 0 || isNaN(storyId)) {
     console.error(

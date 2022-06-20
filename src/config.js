@@ -41,6 +41,10 @@ const optionsSchema = Joi.object({
     overwriteExistingBranch: Joi.boolean(),
     createAndLinkToRemote: Joi.boolean(),
   }).with("topicTaggingApiKey", "rapidApiHost"),
+  delete: Joi.object({
+    force: Joi.boolean(),
+    remote: Joi.boolean(),
+  }),
   open: Joi.object({
     shortcutWorkspace: Joi.string().allow(""),
   }),
@@ -93,6 +97,10 @@ class Config {
 
   get createOptions() {
     return this.opts.create;
+  }
+
+  get deleteOptions() {
+    return this.opts.delete;
   }
 
   get commonOptions() {

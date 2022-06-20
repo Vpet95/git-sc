@@ -3,7 +3,7 @@ import * as commander from "commander";
 
 import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
 import { getConfig } from "./config.js";
-import { initApp, createBranch, openStory } from "./app.js";
+import { initApp, createBranch, deleteBranch, openStory } from "./app.js";
 
 const program = commander.program;
 
@@ -68,6 +68,21 @@ class CommandParser {
         createBranch(storyId);
       });
 
+    const deleteCommand = new commander.Command("delete");
+    deleteCommand
+      .argument("[story id]")
+      .option(
+        "-f, --force",
+        "Does not check if the associated shortcut story is in a 'done' state, and does not prompt"
+      )
+      .option("-r, --remote", "Deletes the associated remote branch as well")
+      .description(
+        "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
+      )
+      .action((storyId, _, __) => {
+        deleteBranch(storyId);
+      });
+
     const openCommand = new commander.Command("open");
     openCommand
       .argument("<story id>")
@@ -83,6 +98,7 @@ class CommandParser {
 
     program.addCommand(initCommand);
     program.addCommand(createCommand);
+    program.addCommand(deleteCommand);
     program.addCommand(openCommand);
 
     program.parse();

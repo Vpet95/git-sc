@@ -18,6 +18,10 @@ export const DEFAULT_OPTIONS = {
     overwriteExistingBranch: false,
     createAndLinkToRemote: true,
   },
+  delete: {
+    force: false,
+    remote: true,
+  },
   open: {
     shortcutWorkspace: "",
   },
