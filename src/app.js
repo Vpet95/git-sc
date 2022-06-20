@@ -6,6 +6,7 @@
 import { existsSync, writeFileSync } from "fs";
 import open from "open";
 import { getConfig } from "./config.js";
+import GitClient from "./git-client.js";
 import { createNewBranch } from "./git-utils.js";
 import { generateFromKeywords, generateName } from "./name-utils.js";
 import { getStory, shortcutConfig } from "./shortcut-client.js";
@@ -70,10 +71,14 @@ export const createBranch = (storyId) => {
 };
 
 export const deleteBranch = (storyId) => {
-  console.log(storyId);
-
   const config = getConfig();
-  console.log(JSON.stringify(config.deleteOptions, null, 2));
+  const git = new GitClient({
+    dir: config.commonOptions.localGitDirectory,
+    debug: config.commonOptions.debug,
+  });
+
+  console.log(git.getCurrentBranchName());
+  console.log(git.getCurrentRemoteName());
 };
 
 export const openStory = (storyId, workspace = undefined) => {

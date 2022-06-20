@@ -30,6 +30,9 @@ export default class GitClient {
 
     try {
       result.output = execSync(command, fullOpts);
+      if (typeof result.output === "object" && Buffer.isBuffer(result.output))
+        result.output = result.output.toString();
+
       result.success = !result.output.includes("Command failed");
     } catch (e) {
       result.output += `\n${e}`;
@@ -44,10 +47,35 @@ export default class GitClient {
   }
 
   checkout({ branchName, create = false }, errorHandler) {
-    return this.do({
-      command: `git checkout ${create ? "-b" : ""} ${branchName}`,
-      errorHandler,
-    });
+    return this.do(
+      {
+        command: `git checkout ${create ? "-b" : ""} ${branchName}`,
+      },
+      errorHandler
+    );
+  }
+
+  getCurrentBranchName(errorHandler) {
+    return this.do(
+      { command: "git branch --show-current" },
+      errorHandler
+    ).output.trim();
+  }
+
+  getCurrentRemoteName(errorHandler) {
+    const output = this.do(
+      { command: "git status -sb" },
+      errorHandler
+    ).output.trim();
+
+    const start = output.indexOf("...") + 3;
+    const end = output.indexOf("\n", start);
+    const parsed = output.substring(start, end);
+
+    return {
+      branch: parsed.substring(parsed.indexOf("/") + 1, parsed.length),
+      remote: parsed.substring(0, parsed.indexOf("/")),
+    };
   }
 
   pull({ remoteName, branchName }, errorHandler) {
@@ -58,10 +86,12 @@ export default class GitClient {
   }
 
   track({ remoteName, branchName }, errorHandler) {
-    return this.do({
-      command: `git push -u ${remoteName} ${branchName}`,
-      errorHandler,
-    });
+    return this.do(
+      {
+        command: `git push -u ${remoteName} ${branchName}`,
+      },
+      errorHandler
+    );
   }
 
   delete({ branchName, remoteName, remoteOnly, force }, errorHandler) {
