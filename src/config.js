@@ -21,23 +21,23 @@ const optionsSchema = Joi.object({
     shortcutApiKey: Joi.string().required(),
     // best we can do, really https://stackoverflow.com/a/537833/3578493
     localGitDirectory: Joi.string().pattern(/^[^\0]+$/),
-    branchRemote: Joi.string().custom(refValidator),
-  }),
-  create: Joi.object({
-    parentBranch: Joi.string().custom((value, helpers) => {
+    primaryBranch: Joi.string().custom((value, helpers) => {
       if (GitClient.isValidBranchName(value)) return value;
 
       return helpers.error("any.invalid");
     }, "must be a valid git branch name"),
-    parentBranchRemote: Joi.string().custom(
+    primaryBranchRemote: Joi.string().custom(
       refValidator,
       "must be a valid git ref"
     ),
+  }),
+  create: Joi.object({
     pullLatest: Joi.boolean(),
     topicTaggingApiKey: Joi.string().min(1), // basically, non-empty
     rapidApiHost: Joi.string().pattern(/^.*\.rapidapi.com$/),
     branchPrefix: Joi.string(),
     branchKeywordCountLimit: Joi.number().integer().min(0),
+    branchRemote: Joi.string().custom(refValidator),
     overwriteExistingBranch: Joi.boolean(),
     createAndLinkToRemote: Joi.boolean(),
   }).with("topicTaggingApiKey", "rapidApiHost"),
@@ -69,8 +69,8 @@ class Config {
         if (
           includesAny(
             errorDetail?.context?.label,
-            "parentBranch",
-            "parentBranchRemote",
+            "primaryBranch",
+            "primaryBranchRemote",
             "branchRemote"
           )
         ) {

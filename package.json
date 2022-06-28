@@ -14,7 +14,8 @@
   "dependencies": {
     "commander": "^9.1.0",
     "joi": "^17.6.0",
-    "open": "^8.4.0"
+    "open": "^8.4.0",
+    "prompt-sync": "^4.2.0"
   },
   "bin": {
     "git-sc": "./index.js"

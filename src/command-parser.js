@@ -75,7 +75,10 @@ class CommandParser {
         "-f, --force",
         "Does not check if the associated shortcut story is in a 'done' state, and does not prompt"
       )
-      .option("-r, --remote", "Deletes the associated remote branch as well")
+      .option(
+        "-r, --remote",
+        "Determines whether the associate remote branch should be deleted as well"
+      )
       .description(
         "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
       )

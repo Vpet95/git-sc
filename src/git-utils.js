@@ -8,13 +8,16 @@ export const createNewBranch = (newBranchName, errorHandler) => {
     debug: config.commonOptions.debug,
   });
 
-  git.checkout({ branchName: config.createOptions.parentBranch }, errorHandler);
+  git.checkout(
+    { branchName: config.commonOptions.primaryBranch },
+    errorHandler
+  );
 
   if (config.createOptions.pullLatest)
     git.pull(
       {
-        remoteName: config.createOptions.parentBranchRemote,
-        branchName: config.createOptions.parentBranch,
+        remoteName: config.commonOptions.primaryBranchRemote,
+        branchName: config.commonOptions.primaryBranch,
       },
       errorHandler
     );
@@ -49,9 +52,24 @@ export const createNewBranch = (newBranchName, errorHandler) => {
   if (config.createOptions.createLinkToRemote)
     git.track(
       {
-        remoteName: config.commonOptions.branchRemote,
+        remoteName: config.createOptions.branchRemote,
         branchName: newBranchName,
       },
       errorHandler
     );
+};
+
+export const findBranchByStoryId = (storyId) => {
+  if (typeof storyId !== "number")
+    throw new Error(
+      `argument 'storyId' must be of type 'number'; was type '${typeof storyId}'`
+    );
+
+  const config = getConfig();
+  const git = new GitClient({
+    dir: config.commonOptions.localGitDirectory,
+    debug: config.debug,
+  });
+
+  return git.listBranches().find((branch) => branch.includes(String(storyId)));
 };

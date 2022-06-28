@@ -7,11 +7,15 @@ import { existsSync, writeFileSync } from "fs";
 import open from "open";
 import { getConfig } from "./config.js";
 import GitClient from "./git-client.js";
-import { createNewBranch } from "./git-utils.js";
+import { createNewBranch, findBranchByStoryId } from "./git-utils.js";
 import { generateFromKeywords, generateName } from "./name-utils.js";
 import { getStory, shortcutConfig } from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
 import { assertSuccess } from "./utils.js";
+import { UNDELETABLE_BRANCHES } from "./constants.js";
+
+import promptSync from "prompt-sync";
+const prompt = promptSync();
 
 export const initApp = (fileName, force = false) => {
   if (existsSync(fileName)) {
@@ -74,11 +78,80 @@ export const deleteBranch = (storyId) => {
   const config = getConfig();
   const git = new GitClient({
     dir: config.commonOptions.localGitDirectory,
-    debug: config.commonOptions.debug,
+    debug: config.debug,
   });
 
-  console.log(git.getCurrentBranchName());
-  console.log(git.getCurrentRemoteName());
+  const branchName =
+    storyId === undefined
+      ? git.getCurrentBranchName()
+      : findBranchByStoryId(parseInt(storyId, 10));
+
+  if (branchName === undefined) {
+    if (storyId === undefined)
+      console.error("Error: could not find current branch name");
+    else
+      console.error(
+        `Error: could not find branch pertaining to story id ${storyId}`
+      );
+
+    process.exit();
+  }
+
+  if (
+    UNDELETABLE_BRANCHES.includes(branchName) &&
+    !config.deleteOptions.force
+  ) {
+    console.warn(
+      `Cannot delete branch '${branchName}' - use --force to override`
+    );
+    process.exit();
+  }
+
+  // todo - add a Shortcut API call to check status of ticket
+  // todo - add a configuration field for 'done state'
+
+  if (!config.deleteOptions.force) {
+    const resp = prompt(`Delete branch '${branchName}' y/[n]? `);
+
+    if (resp.length === 0 || resp.toLowerCase() === "n") {
+      console.log("Action canceled");
+      return;
+    }
+  }
+
+  let remoteName = "";
+  let remoteBranchName = "";
+  if (config.deleteOptions.remote) {
+    git.checkout({ branchName: branchName });
+
+    const remoteInfo = git.getCurrentRemoteName();
+
+    if (remoteInfo) {
+      remoteBranchName = remoteInfo.branch;
+      remoteName = remoteInfo.remote;
+    }
+  }
+
+  console.log(
+    `Deleting local branch ${branchName}${
+      remoteName
+        ? ` and remote branch ${remoteName}/${remoteBranchName}...`
+        : "..."
+    }`
+  );
+
+  git.checkout({ branchName: config.commonOptions.primaryBranch });
+  git.delete(
+    {
+      branchName,
+      remoteName,
+      force: config.deleteOptions.force,
+    },
+    assertSuccess
+  );
+
+  // console.log(git.getCurrentBranchName());
+  // console.log(git.getCurrentRemoteName());
 };
 
 export const openStory = (storyId, workspace = undefined) => {

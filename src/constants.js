@@ -5,16 +5,16 @@ export const DEFAULT_OPTIONS = {
   common: {
     shortcutApiKey: "",
     localGitDirectory: process.cwd(),
-    branchRemote: "origin",
+    primaryBranch: "develop",
+    primaryBranchRemote: "origin",
   },
   create: {
-    parentBranch: "develop",
-    parentBranchRemote: "origin",
     pullLatest: true,
     topicTaggingApiKey: "",
     rapidApiHost: "",
     branchPrefix: "sc",
     branchKeywordCountLimit: 5,
+    branchRemote: "origin",
     overwriteExistingBranch: false,
     createAndLinkToRemote: true,
   },
@@ -26,3 +26,5 @@ export const DEFAULT_OPTIONS = {
     shortcutWorkspace: "",
   },
 };
+
+export const UNDELETABLE_BRANCHES = ["develop", "main", "master"];

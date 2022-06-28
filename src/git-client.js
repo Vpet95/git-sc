@@ -69,7 +69,14 @@ export default class GitClient {
     ).output.trim();
 
     const start = output.indexOf("...") + 3;
-    const end = output.indexOf("\n", start);
+
+    if (start === -1) return undefined;
+
+    let end = output.indexOf("\n", start);
+
+    // for instance, if no files were modified on the current branch
+    if (end === -1) end = output.length;
+
     const parsed = output.substring(start, end);
 
     return {
@@ -112,6 +119,17 @@ export default class GitClient {
       { command: `git branch ${force ? "-D" : "-d"} ${branchName}` },
       errorHandler
     );
+  }
+
+  listBranches() {
+    return this.do({ command: "git branch" })
+      .output.split("\n")
+      .map((branchName) => {
+        const name = branchName.trim();
+
+        // clean up the current branch name
+        return name[0] === "*" ? name.substring(2, name.length) : name;
+      });
   }
 
   static isValidBranchName(name) {
