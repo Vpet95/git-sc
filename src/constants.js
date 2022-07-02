@@ -21,6 +21,12 @@ export const DEFAULT_OPTIONS = {
   delete: {
     force: false,
     remote: true,
+    stateFilter: {
+      states: [],
+      andAbove: false,
+      andBelow: false,
+      inBetween: false,
+    },
   },
   open: {
     shortcutWorkspace: "",

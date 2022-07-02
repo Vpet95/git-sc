@@ -92,8 +92,12 @@ export const convertToKeywords = (name, limit, cb) => {
 };
 
 export const generateName = (storyId, storyName) => {
-  const limit = getConfig().createOptions.branchKeywordCountLimit;
-  return `${prefix}${storyId}/${filterAndTransform(storyName, limit)}`;
+  const createOpts = getConfig().createOptions;
+
+  return `${createOpts.branchPrefix}${storyId}/${filterAndTransform(
+    storyName,
+    createOpts.branchKeywordCountLimit
+  )}`;
 };
 
 export const generateFromKeywords = (storyId, storyName, cb) => {

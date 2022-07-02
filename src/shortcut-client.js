@@ -1,4 +1,5 @@
 import https from "https";
+import { isValidURL, generateURL } from "./utils.js";
 
 let API_KEY = "";
 
@@ -11,50 +12,75 @@ export const shortcutConfig = (apiToken) => {
   }
 };
 
-export const getStory = (ticketId, cb) => {
-  if (typeof ticketId !== "number")
-    throw new Error("Shortcut ticket id must be a valid integer");
+const get = (
+  { baseURL, resource = null, params = [] },
+  expectedStatusCode = 200
+) => {
+  // assemble and validate a full url; final possible output looks like: https://www.somesite.com/1234?param1="abc"&param2="def"
+  const fullURL = generateURL({ baseURL, resource, params });
+  if (!isValidURL(fullURL)) throw new Error(`[${fullURL}] is not a valid URL`);
 
-  if (!cb || typeof cb !== "function")
-    throw new Error("Callback must be a valid function");
-
-  https
-    .get(
-      `https://api.app.shortcut.com/api/v3/stories/${ticketId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Shortcut-Token": API_KEY,
+  return new Promise((resolve, reject) => {
+    https
+      .get(
+        fullURL,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Shortcut-Token": API_KEY,
+          },
         },
-      },
-      (res) => {
-        const { statusCode } = res;
+        (res) => {
+          const { statusCode } = res;
 
-        if (statusCode < 200 || statusCode >= 300) {
-          console.error(`Request failed. Status code: ${statusCode}`);
-          res.resume();
-          process.exit();
-        }
-
-        res.setEncoding("utf8");
-        let rawData = "";
-
-        res.on("data", (chunk) => {
-          rawData += chunk;
-        });
-
-        res.on("end", () => {
-          try {
-            const parsedData = JSON.parse(rawData);
-            cb(parsedData);
-          } catch (e) {
-            console.error(`JSON error ${e.message}`);
-            process.exit();
+          if (statusCode !== expectedStatusCode) {
+            reject(statusCode);
+            return;
           }
-        });
-      }
-    )
-    .on("error", (e) => {
-      console.error(`Request error: ${e.message}`);
-    });
+
+          res.setEncoding("utf8");
+          let rawData = "";
+
+          res.on("data", (chunk) => {
+            rawData += chunk;
+          });
+
+          res.on("end", () => {
+            try {
+              const parsedData = JSON.parse(rawData);
+              resolve(parsedData);
+            } catch (e) {
+              reject(e.message);
+            }
+
+            return;
+          });
+        }
+      )
+      .on("error", (e) => {
+        reject(e.message);
+        return;
+      });
+  });
 };
+
+export const getStory = (ticketId) => {
+  return get({
+    baseURL: "https://api.app.shortcut.com/api/v3/stories",
+    resource: `${ticketId}`,
+  });
+};
+
+export const getWorkflows = () => {
+  return get({
+    baseURL: "https://api.app.shortcut.com/api/v3/workflows",
+  });
+};
+
+export const getSelf = () => {
+  return get({
+    baseURL: "https://api.app.shortcut.com/api/v3/member",
+  });
+};
+
+// todo - need a way to get current user's name or id

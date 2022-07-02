@@ -44,6 +44,12 @@ const optionsSchema = Joi.object({
   delete: Joi.object({
     force: Joi.boolean(),
     remote: Joi.boolean(),
+    stateFilter: Joi.object({
+      states: Joi.array().items(Joi.string()), // empty strings not allowed by default
+      andAbove: Joi.boolean(),
+      andBelow: Joi.boolean(),
+      inBetween: Joi.boolean(),
+    }),
   }),
   open: Joi.object({
     shortcutWorkspace: Joi.string().allow(""),
@@ -118,9 +124,9 @@ class Config {
   describe() {
     const defaults = structuredClone(DEFAULT_OPTIONS);
 
-    defaults.create.twinwordApiKey =
+    defaults.create.topicTaggingApiKey =
       "<optional; your Twinword API key here - to obtain one go to https://rapidapi.com/twinword/api/topic-tagging/>";
-    defaults.create.rapidapiHost =
+    defaults.create.rapidApiHost =
       "<optional; your RapidAPI host here - to obtain one go to https://rapidapi.com/twinword/api/topic-tagging/>";
     defaults.common.shortcutApiKey =
       "<required; your Shortcut API key - see https://help.shortcut.com/hc/en-us/articles/205701199-Shortcut-API-Tokens for more info>";

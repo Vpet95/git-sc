@@ -44,7 +44,7 @@ export const initApp = (fileName, force = false) => {
 // apparantly isNaN will interpret the empty string as a valid number because the empty string is falsy,
 // and when coerced into a Number, takes on the value 0
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN#confusing_special-case_behavior
-export const createBranch = (storyId) => {
+export const createBranch = async (storyId) => {
   if (storyId.length === 0 || isNaN(storyId)) {
     console.error(
       `Value (${storyId}) supplied for <story id> must be a valid integer, exiting.`
@@ -63,23 +63,25 @@ export const createBranch = (storyId) => {
     config.createOptions.topicTaggingApiKey
   );
 
-  getStory(storyId, (story) => {
-    if (twinwordConfigured()) {
-      generateFromKeywords(storyId, story.name, (branchName) => {
-        createNewBranch(branchName, assertSuccess);
-      });
-    } else {
-      createNewBranch(generateName(storyId, story.name), assertSuccess);
-    }
-  });
+  const story = await getStory(storyId);
+
+  if (twinwordConfigured()) {
+    generateFromKeywords(storyId, story.name, (branchName) => {
+      createNewBranch(branchName, assertSuccess);
+    });
+  } else {
+    createNewBranch(generateName(storyId, story.name), assertSuccess);
+  }
 };
 
-export const deleteBranch = (storyId) => {
+export const deleteBranch = async (storyId) => {
   const config = getConfig();
   const git = new GitClient({
     dir: config.commonOptions.localGitDirectory,
     debug: config.debug,
   });
+
+  shortcutConfig(config.commonOptions.shortcutApiKey);
 
   const branchName =
     storyId === undefined
@@ -107,10 +109,30 @@ export const deleteBranch = (storyId) => {
     process.exit();
   }
 
-  // todo - add a Shortcut API call to check status of ticket
-  // todo - add a configuration field for 'done state'
-
   if (!config.deleteOptions.force) {
+    let additionalWarning = "";
+
+    // we're deleting the current branch, see if we can parse out a story id
+    if (storyId === undefined) {
+      // this is very much less than ideal. I don't currently know what the mix/max Shortcut story ids are;
+      // but I want to avoid the possibility of snagging just any number from a branch name; so we're making
+      // an educated guess here that if there are at least 3 digits in a row, it's most likely an id
+      // Again, not sure how often people have numbers in their git branch names
+      const idPattern = /\d{3,}/;
+      storyId = branchName.match(idPattern);
+
+      storyId = storyId === null ? undefined : parseInt(storyId, 10);
+    }
+
+    if (storyId !== undefined) {
+      const story = await getStory(parseInt(storyId, 10)).catch((e) => {
+        console.error(e);
+        process.exit();
+      });
+
+      console.log(`We got a story: ${JSON.stringify(story, null, 2)}`);
+    }
+
     const resp = prompt(`Delete branch '${branchName}' y/[n]? `);
 
     if (resp.length === 0 || resp.toLowerCase() === "n") {

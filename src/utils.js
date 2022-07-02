@@ -2,6 +2,8 @@
  * Misc. utility functions to make my life easier
  */
 
+import { URL } from "url";
+
 export const includesAny = (source, ...values) => {
   if (!source) return false;
 
@@ -22,5 +24,43 @@ export const assertSuccess = (status) => {
   if (!status.success) {
     console.error(status.output);
     process.exit();
+  }
+};
+
+export const generateURL = ({ baseURL, resource = null, params = [] }) => {
+  return `${baseURL}${
+    resource !== null
+      ? baseURL[baseURL.length - 1] === "/"
+        ? resource
+        : `/${resource}`
+      : ""
+  }${
+    params.length
+      ? `?${params.reduce(
+          (prev, current) =>
+            prev.length === 0
+              ? `${current.name}=${current.value.replaceAll(/\s/g, "%20")}`
+              : `${prev}&${current.name}=${current.value.replaceAll(
+                  /\s/g,
+                  "%20"
+                )}`,
+          ""
+        )}`
+      : ""
+  }`;
+};
+
+// yoinked from https://stackoverflow.com/a/55585593/3578493
+// thanks pouya!
+export const isValidURL = (urlString, protocols = ["http", "https"]) => {
+  try {
+    const url = new URL(urlString);
+    return protocols
+      ? url.protocol
+        ? protocols.map((p) => `${p.toLowerCase()}:`).includes(url.protocol)
+        : false
+      : true;
+  } catch (err) {
+    return false;
   }
 };
