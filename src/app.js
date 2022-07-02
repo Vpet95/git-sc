@@ -74,6 +74,45 @@ export const createBranch = async (storyId) => {
   }
 };
 
+// first determine if it's even possible to delete the branch given current settings
+// then, prompt
+async function validateDeleteConditions(branchName, storyId) {
+  const deleteOpts = getConfig().deleteOptions;
+
+  // we're deleting the current branch, see if we can parse out a story id
+  if (storyId === undefined) {
+    // this is very much less than ideal. I don't currently know what the mix/max Shortcut story ids are;
+    // but I want to avoid the possibility of snagging just any number from a branch name; so we're making
+    // an educated guess here that if there are at least 3 digits in a row, it's most likely an id
+    // Not sure how often people have misc. numbers in their git branch names
+    const idPattern = /\d{3,}/;
+    storyId = branchName.match(idPattern);
+
+    storyId = storyId === null ? undefined : parseInt(storyId, 10);
+  }
+
+  if (storyId !== undefined) {
+    const story = await getStory(parseInt(storyId, 10)).catch((e) => {
+      console.error(e);
+      process.exit();
+    });
+
+    if (
+      deleteOpts.stateFilter &&
+      deleteOpts.stateFilter.states &&
+      deleteOpts.stateFilter.states.length
+    )
+      console.log(`We got a story: ${JSON.stringify(story, null, 2)}`);
+  }
+
+  const resp = prompt(`Delete branch '${branchName}' y/[n]? `);
+
+  if (resp.length === 0 || resp.toLowerCase() === "n") {
+    console.log("Action canceled");
+    return;
+  }
+}
+
 export const deleteBranch = async (storyId) => {
   const config = getConfig();
   const git = new GitClient({
@@ -109,37 +148,8 @@ export const deleteBranch = async (storyId) => {
     process.exit();
   }
 
-  if (!config.deleteOptions.force) {
-    let additionalWarning = "";
-
-    // we're deleting the current branch, see if we can parse out a story id
-    if (storyId === undefined) {
-      // this is very much less than ideal. I don't currently know what the mix/max Shortcut story ids are;
-      // but I want to avoid the possibility of snagging just any number from a branch name; so we're making
-      // an educated guess here that if there are at least 3 digits in a row, it's most likely an id
-      // Again, not sure how often people have numbers in their git branch names
-      const idPattern = /\d{3,}/;
-      storyId = branchName.match(idPattern);
-
-      storyId = storyId === null ? undefined : parseInt(storyId, 10);
-    }
-
-    if (storyId !== undefined) {
-      const story = await getStory(parseInt(storyId, 10)).catch((e) => {
-        console.error(e);
-        process.exit();
-      });
-
-      console.log(`We got a story: ${JSON.stringify(story, null, 2)}`);
-    }
-
-    const resp = prompt(`Delete branch '${branchName}' y/[n]? `);
-
-    if (resp.length === 0 || resp.toLowerCase() === "n") {
-      console.log("Action canceled");
-      return;
-    }
-  }
+  if (!config.deleteOptions.force)
+    await validateDeleteConditions(branchName, storyId);
 
   let remoteName = "";
   let remoteBranchName = "";

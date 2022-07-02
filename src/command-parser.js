@@ -33,13 +33,16 @@ class CommandParser {
         then in the home directory. If no such configuration files are found, git-sc will attempt \
         to run with reasonable defaults, if possible."
       )
-      .hook("preAction", (thisCommand, actionCommand) => {
+      .hook("preAction", async (thisCommand, actionCommand) => {
         /* Loads program configuration options prior to any command action. We exclude init because init itself 
            is supposed to generate a brand new configuration file, so it wouldn't make sense to look for existing ones */
         if (program.opts().debug) this.config.setDebug(program.opts().debug);
 
         if (actionCommand.name() !== "init")
           this.config.load(program.opts().config);
+
+        if (actionCommand.name() === "delete")
+          await this.config.processDeleteOptions();
       });
 
     const initCommand = new commander.Command("init")

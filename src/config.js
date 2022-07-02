@@ -7,6 +7,8 @@ import {
   DEFAULT_OPTIONS,
 } from "./constants.js";
 import { includesAny } from "./utils.js";
+import { shortcutConfig } from "./shortcut-client.js";
+import { stateDataFromNames } from "./shortcut-utils.js";
 import GitClient from "./git-client.js";
 
 const refValidator = (value, helpers) => {
@@ -91,6 +93,9 @@ class Config {
       console.error(`Your settings:\n${JSON.stringify(this.opts, null, 2)}`);
       process.exit();
     }
+
+    // todo - add additional validation here
+    // > if deleteOptions.stateFilter.inBetween is set, then states needs to have an even number of elements
   }
 
   get debug() {
@@ -186,6 +191,25 @@ class Config {
 
       return true;
     });
+  }
+
+  // enriches the stateFilter to something more useful to the app
+  async processDeleteOptions() {
+    if (!this.opts.delete || !this.opts.delete.stateFilter) return;
+
+    shortcutConfig(this.opts.common.shortcutApiKey);
+    const stateData = await stateDataFromNames(
+      this.opts.delete.stateFilter.states
+    );
+
+    if (this.opts.delete.stateFilter.inBetween && stateData.length % 2 !== 0) {
+      console.error(
+        "Odd number of states in the state filter detected - this is incompatible with the inBetween setting."
+      );
+      process.exit();
+    }
+
+    this.opts.delete.stateFilter.states = stateData;
   }
 }
 
