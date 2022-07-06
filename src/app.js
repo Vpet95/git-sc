@@ -97,12 +97,14 @@ async function validateDeleteConditions(branchName, storyId) {
       process.exit();
     });
 
-    if (
-      deleteOpts.stateFilter &&
-      deleteOpts.stateFilter.states &&
-      deleteOpts.stateFilter.states.length
-    )
-      console.log(`We got a story: ${JSON.stringify(story, null, 2)}`);
+    // if (
+    //   deleteOpts.stateFilter &&
+    //   deleteOpts.stateFilter.states &&
+    //   deleteOpts.stateFilter.states.length
+    // ) {
+    //   // todo? consider changing schema
+    // }
+    console.log(`We got a story: ${JSON.stringify(story, null, 2)}`);
   }
 
   const resp = prompt(`Delete branch '${branchName}' y/[n]? `);

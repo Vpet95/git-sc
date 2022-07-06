@@ -22,10 +22,13 @@ export const DEFAULT_OPTIONS = {
     force: false,
     remote: true,
     stateFilter: {
-      states: [],
-      andAbove: false,
-      andBelow: false,
-      inBetween: false,
+      exactly: [],
+      inBetween: {
+        lowerBound: "",
+        upperBound: "",
+      },
+      andAbove: "",
+      andBelow: "",
     },
   },
   open: {

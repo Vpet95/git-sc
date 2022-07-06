@@ -43,6 +43,15 @@ class CommandParser {
 
         if (actionCommand.name() === "delete")
           await this.config.processDeleteOptions();
+
+        console.log(
+          `delete options: ${JSON.stringify(
+            this.config.deleteOptions,
+            null,
+            2
+          )}`
+        );
+        process.exit();
       });
 
     const initCommand = new commander.Command("init")

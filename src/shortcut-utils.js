@@ -25,9 +25,9 @@ export const stateDataFromNames = async (stateNames) => {
     throw new Error(e);
   });
 
-  const stateIds = stateNames.map((stateName) =>
+  const states = stateNames.map((stateName) =>
     getStateData(workflows, stateName)
   );
 
-  return stateIds.filter((elem) => elem !== undefined);
+  return states.filter((elem) => elem !== undefined);
 };

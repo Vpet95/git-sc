@@ -47,10 +47,13 @@ const optionsSchema = Joi.object({
     force: Joi.boolean(),
     remote: Joi.boolean(),
     stateFilter: Joi.object({
-      states: Joi.array().items(Joi.string()), // empty strings not allowed by default
-      andAbove: Joi.boolean(),
-      andBelow: Joi.boolean(),
-      inBetween: Joi.boolean(),
+      exactly: Joi.array().items(Joi.string()),
+      inBetween: Joi.object({
+        lowerBound: Joi.string(),
+        upperBound: Joi.string(),
+      }),
+      andAbove: Joi.string(),
+      andBelow: Joi.string(),
     }),
   }),
   open: Joi.object({
@@ -94,6 +97,30 @@ class Config {
       process.exit();
     }
 
+    // on initial release we don't want to allow multiple filter options at once.
+    // Validating whether the resulting filter makes any sense is more trouble than it's worth; also a single filter covers most if not all use cases
+    if (this.opts.delete && this.opts.delete.stateFilter) {
+      let optionCount = 0;
+
+      if (this.opts.delete.stateFilter.exactly) optionCount++;
+      if (this.opts.delete.stateFilter.andAbove) optionCount++;
+      if (this.opts.delete.stateFilter.andBelow) optionCount++;
+      if (this.opts.delete.stateFilter.inBetween) optionCount++;
+
+      if (optionCount > 1) {
+        console.error(
+          "Multiple filter conditions detected in the delete options stateFilter.\nPlease review your settings and narrow the stateFilter to one condition."
+        );
+        process.exit();
+      } else if (optionCount === 0) {
+        // looks like they started writing a filter and got distracted by a shiny object. Deleting branches is serious and I would rather
+        // risk being annoying and have the user double-check than delete an unintended branch
+        console.error(
+          "No options were provided to the stateFilter.\nExpected one of 'exactly', 'inBetween', 'andAbove', 'andBelow'"
+        );
+        process.exit();
+      }
+    }
     // todo - add additional validation here
     // > if deleteOptions.stateFilter.inBetween is set, then states needs to have an even number of elements
   }
@@ -196,20 +223,31 @@ class Config {
   // enriches the stateFilter to something more useful to the app
   async processDeleteOptions() {
     if (!this.opts.delete || !this.opts.delete.stateFilter) return;
+    const stateFilter = this.opts.delete.stateFilter;
 
     shortcutConfig(this.opts.common.shortcutApiKey);
-    const stateData = await stateDataFromNames(
-      this.opts.delete.stateFilter.states
-    );
 
-    if (this.opts.delete.stateFilter.inBetween && stateData.length % 2 !== 0) {
-      console.error(
-        "Odd number of states in the state filter detected - this is incompatible with the inBetween setting."
+    if (stateFilter.exactly && stateFilter.exactly.length)
+      this.opts.delete.stateFilter.exactly = await stateDataFromNames(
+        stateFilter.exactly
       );
-      process.exit();
-    }
+    else if (stateFilter.andBelow)
+      this.opts.delete.stateFilter.andBelow = (
+        await stateDataFromNames([stateFilter.andBelow])
+      )[0];
+    else if (stateFilter.andAbove)
+      this.opts.delete.stateFilter.andAbove = (
+        await stateDataFromNames([stateFilter.andAbove])
+      )[0];
+    else if (stateFilter.inBetween) {
+      const results = await stateDataFromNames([
+        stateFilter.inBetween.lowerBound,
+        stateFilter.inBetween.upperBound,
+      ]);
 
-    this.opts.delete.stateFilter.states = stateData;
+      this.opts.delete.stateFilter.inBetween.lowerBound = results[0];
+      this.opts.delete.stateFilter.inBetween.upperBound = results[1];
+    }
   }
 }
 
