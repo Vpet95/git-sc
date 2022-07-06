@@ -144,8 +144,11 @@ async function validateDeleteConditionsAndPrompt(branchName, storyId) {
   return true;
 }
 
-export const deleteBranch = async (storyId) => {
+export const deleteBranch = async (storyId, remote = false, force = false) => {
   const config = getConfig();
+  const shouldDeleteRemote = config.deleteOptions.remote || remote;
+  const shouldForce = config.deleteOptions.force || force;
+
   const git = new GitClient({
     dir: config.commonOptions.localGitDirectory,
     debug: config.debug,
@@ -169,17 +172,28 @@ export const deleteBranch = async (storyId) => {
     return;
   }
 
-  if (
-    UNDELETABLE_BRANCHES.includes(branchName) &&
-    !config.deleteOptions.force
-  ) {
+  if (UNDELETABLE_BRANCHES.includes(branchName) && !shouldForce) {
     console.warn(
       `Cannot delete branch '${branchName}' - use --force to override`
     );
     return;
   }
 
-  if (!config.deleteOptions.force) {
+  if (git.status().includes("Changes not staged for commit")) {
+    if (shouldForce) {
+      console.warn(
+        "Uncomitted changes detected in branch. Resetting due to --force flag."
+      );
+      git.reset(true, assertSuccess);
+    } else {
+      console.error(
+        "Uncomitted changes detected in branch - reset, commit, or stash changes; then try again."
+      );
+      return;
+    }
+  }
+
+  if (!shouldForce) {
     const shouldContinue = await validateDeleteConditionsAndPrompt(
       branchName,
       storyId
@@ -190,7 +204,7 @@ export const deleteBranch = async (storyId) => {
 
   let remoteName = "";
   let remoteBranchName = "";
-  if (config.deleteOptions.remote) {
+  if (shouldDeleteRemote) {
     git.checkout({ branchName: branchName });
 
     const remoteInfo = git.getCurrentRemoteName();
@@ -214,13 +228,10 @@ export const deleteBranch = async (storyId) => {
     {
       branchName,
       remoteName,
-      force: config.deleteOptions.force,
+      force: shouldForce,
     },
     assertSuccess
   );
-
-  // console.log(git.getCurrentBranchName());
-  // console.log(git.getCurrentRemoteName());
 };
 
 export const openStory = (storyId, workspace = undefined) => {

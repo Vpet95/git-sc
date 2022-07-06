@@ -76,17 +76,19 @@ class CommandParser {
       .argument("[story id]")
       .option(
         "-f, --force",
-        "Does not check if the associated shortcut story is in a 'done' state, and does not prompt"
+        "Does not check if the associated shortcut story is in a 'done' state, and does not prompt",
+        false
       )
       .option(
         "-r, --remote",
-        "Determines whether the associated remote branch should be deleted as well"
+        "Determines whether the associated remote branch should be deleted as well",
+        false
       )
       .description(
         "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
       )
-      .action((storyId, _, __) => {
-        deleteBranch(storyId);
+      .action((storyId, options, __) => {
+        deleteBranch(storyId, options.remote, options.force);
       });
 
     const openCommand = new commander.Command("open");

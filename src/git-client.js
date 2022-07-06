@@ -132,6 +132,14 @@ export default class GitClient {
       });
   }
 
+  status() {
+    return this.do({ command: "git status" }).output;
+  }
+
+  reset(hard = false, errorHandler) {
+    this.do({ command: `git reset ${hard ? "--hard" : ""}` }, errorHandler);
+  }
+
   static isValidBranchName(name) {
     try {
       execSync(`git check-ref-format --branch ${name}`, {

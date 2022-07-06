@@ -26,21 +26,24 @@ Call git-sc with `--help` to see full usage:
 
 ```
 Options:
-  -V, --version               output the version number
-  --debug                     Determines whether git-sc outputs status and debug messages to the console
-  -c, --config <file>         Path to a JSON configuration file containing git-sc program options.
-                               If omitted, git-sc will look for a file named `gitscconf.json` in the
-                              current directory,         then in the home directory. If no such
-                              configuration files are found, git-sc will attempt         to run with
-                              reasonable defaults, if possible.
-  -h, --help                  display help for command
+  -V, --version                output the version number
+  --debug                      Determines whether git-sc outputs status and debug messages to the console
+  -c, --config <file>          Path to a JSON configuration file containing git-sc program options.
+                                 If omitted, git-sc will look for a file named `gitscconf.json` in the
+                               current directory,         then in the home directory. If no such
+                               configuration files are found, git-sc will attempt         to run with
+                               reasonable defaults, if possible.
+  -h, --help                   display help for command
 
 Commands:
-  init [options] [file name]  Generates a template JSON configuration file for git-sc
-  create <story id>           Creates a new git branch by generating a name from the given Shortcut story
-                              denoted by <story id>
-  open [options] <story id>   Opens the given Shortcut story in the default web browser
-  help [command]              display help for command
+  init [options] [file name]   Generates a template JSON configuration file for git-sc
+  create <story id>            Creates a new git branch by generating a name from the given Shortcut
+                               story denoted by <story id>
+  delete [options] [story id]  Deletes a git branch pertaining to the given shortcut story - checking
+                               first if the story is in a 'done' state. If <story id> is omitted,
+                               attempts to delete the currently checkecd out branch.
+  open [options] <story id>    Opens the given Shortcut story in the default web browser
+  help [command]               display help for command
 ```
 
 ### Initializing
@@ -74,6 +77,67 @@ By default git-sc will generate branch names following this scheme:
 `<prefix><story id>/<hyphenated keywords>`
 
 You can configure the branch prefix with the `branchPrefix` field in the configuration JSON - it currently defaults to 'sc' for 'Shortcut'. It may also be helpful to configure a limit on the number of words that can appear in the hyphenated keyword list for stories with particularly long titles. To do so, set a limit via the `branchKeywordCountLimit` field.
+
+### Deleting a Branch
+
+git-sc allows you to delete local and remote branches by specifying the Shortcut ticket id associated with the branch. The syntax follows:
+
+```
+git-sc delete [ticket id]
+```
+
+You can omit the ticket id and git-sc will attempt to delete the current branch. Note that the branch must have the related shortcut ticket id in its name for this command to work - e.g. if you used git-sc to generate the branch name in the first place.
+
+git-sc will refuse to delete branches named `develop`, `main`, or `master` as these typically denote the root/trunk branches of a given repo. You can skip through this check with the `--force` option (see below).
+
+By default, git-sc will do some additional safety checks and prompting to make sure only the intended branch gets deleted. This is skippable and configurable.
+
+#### Skip checks and prompting
+
+To skip safety checks and prompting, provide the command with the `--force` (or `-f`) option as in:
+
+```
+git-sc delete 12345 --force
+```
+
+#### Delete remote branches
+
+`git-sc delete` defaults to deleting local branches only. You can tell git-sc to delete any remotes associated with the given branch by specifying the `--remote` (or `-r`) command-line option, as in:
+
+```
+git-sc delete 12345 --remote
+```
+
+#### Configure checks with state filters
+
+For extra saftey you can configure git-sc to only allow deletion of branches whose Shortcut tickets are within a given range of states. The `gitscconf.json` file contains a `delete` section that allows you set up these state filters:
+
+```
+"delete": {
+  "force": false,
+  "remote": false,
+  "stateFilter": {
+    "exactly": [],
+    "inBetween": {
+      "lowerBound": "",
+      "upperBound": ""
+    },
+    "andAbove": "",
+    "andBelow": ""
+  }
+},
+```
+
+The `stateFilter` above allows you to configure ranges of Shortcut ticket states through the four options:
+
+- `exactly`: supply an array of strings corresponding to the names of the given states
+- `inBetween`: specify the name of a starting state and an ending state; and git-sc will allow the deletion of any tickets that fall between these (inclusive)
+- `andAbove`: specify the name of a state, and git-sc will allow deletion of any ticket that is within this state or above
+- `andBelow`: specify the name of a state, and git-sc will allow deletion of any ticket that is within this state or below
+
+Note: git-sc expects only one of these to be present in the state filter.
+
+States are strings representing the state of the work of the Shortcut ticket item, e.g. 'Backlog', 'In Review', 'Blocked', 'In Production', etc.
 
 ### Opening a Shortcut Ticket
 
@@ -121,7 +185,7 @@ _Subject to change on a whim, and in no particular order_ 😅
 - [ ] Configuration file versioning
 - [ ] More output name format configurability for `create`
 - [ ] Exposing more Shortcut story fields for name formatting
-- [ ] Command to easily delete branches based on shortcut story id
+- [x] Command to easily delete branches based on shortcut story id
 - [ ] Command to clean up local branch list based on branch status (configurable)
 - [ ] Command to add to-dos
 - [x] Command to open shortcut story in default browser
