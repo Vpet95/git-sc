@@ -20,7 +20,8 @@ export const DEFAULT_OPTIONS = {
   },
   delete: {
     force: false,
-    remote: true,
+    remote: false,
+    mineOnly: true,
     stateFilter: {
       exactly: [],
       inBetween: {

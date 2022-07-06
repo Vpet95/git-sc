@@ -92,13 +92,15 @@ git-sc will refuse to delete branches named `develop`, `main`, or `master` as th
 
 By default, git-sc will do some additional safety checks and prompting to make sure only the intended branch gets deleted. This is skippable and configurable.
 
-#### Skip checks and prompting
+#### Force deleting
 
 To skip safety checks and prompting, provide the command with the `--force` (or `-f`) option as in:
 
 ```
 git-sc delete 12345 --force
 ```
+
+NOTE: in addition to skipping Shortcut-related checks, the `--force` option will also ignore uncommitted changes and reset them, and perform the unsafe `-D` delete. Only use this option if you know what you're doing.
 
 #### Delete remote branches
 
@@ -108,7 +110,7 @@ git-sc delete 12345 --force
 git-sc delete 12345 --remote
 ```
 
-#### Configure checks with state filters
+#### Safety Checks
 
 For extra saftey you can configure git-sc to only allow deletion of branches whose Shortcut tickets are within a given range of states. The `gitscconf.json` file contains a `delete` section that allows you set up these state filters:
 
@@ -116,6 +118,7 @@ For extra saftey you can configure git-sc to only allow deletion of branches who
 "delete": {
   "force": false,
   "remote": false,
+  "mineOnly": true,
   "stateFilter": {
     "exactly": [],
     "inBetween": {
@@ -138,6 +141,8 @@ The `stateFilter` above allows you to configure ranges of Shortcut ticket states
 Note: git-sc expects only one of these to be present in the state filter.
 
 States are strings representing the state of the work of the Shortcut ticket item, e.g. 'Backlog', 'In Review', 'Blocked', 'In Production', etc.
+
+Additionally you can configure git-sc to only allow deletion of branches associated with Shortcut stories assigned to you via the `mineOnly` field.
 
 ### Opening a Shortcut Ticket
 

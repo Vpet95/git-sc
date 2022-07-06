@@ -9,7 +9,12 @@ import { getConfig } from "./config.js";
 import GitClient from "./git-client.js";
 import { createNewBranch, findBranchByStoryId } from "./git-utils.js";
 import { generateFromKeywords, generateName } from "./name-utils.js";
-import { getStory, getState, shortcutConfig } from "./shortcut-client.js";
+import {
+  getStory,
+  getState,
+  getSelf,
+  shortcutConfig,
+} from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
 import { assertSuccess } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
@@ -74,6 +79,13 @@ export const createBranch = async (storyId) => {
   }
 };
 
+async function passesSelfFilter(story, mineOnly) {
+  if (!mineOnly) return true; // covers undefined and null as well - if it's not set, it's false by default
+
+  const self = await getSelf();
+  return story.owner_ids.includes(self.id);
+}
+
 async function passesStateFilter(story, stateFilter) {
   if (!stateFilter) return true;
   if (!story) false; // should never happen
@@ -126,7 +138,16 @@ async function validateDeleteConditionsAndPrompt(branchName, storyId) {
       process.exit();
     });
 
-    const passes = await passesStateFilter(story, deleteOpts.stateFilter);
+    let passes = await passesSelfFilter(story, deleteOpts.mineOnly);
+
+    if (!passes) {
+      console.warn(
+        `Branch ${branchName} is associated with a Shortcut story that is not assigned to you; skipping`
+      );
+      return false;
+    }
+
+    passes = await passesStateFilter(story, deleteOpts.stateFilter);
 
     if (!passes) {
       console.warn(`Branch ${branchName} filtered out by stateFilter`);

@@ -46,6 +46,7 @@ const optionsSchema = Joi.object({
   delete: Joi.object({
     force: Joi.boolean(),
     remote: Joi.boolean(),
+    mineOnly: Joi.boolean(),
     stateFilter: Joi.object({
       exactly: Joi.array().items(Joi.string()),
       inBetween: Joi.object({
