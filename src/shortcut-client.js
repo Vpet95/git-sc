@@ -77,6 +77,25 @@ export const getWorkflows = () => {
   });
 };
 
+export const getState = async (stateId) => {
+  if (stateId == undefined /* or null */ || stateId < 0) return null;
+
+  // just in case
+  if (typeof stateId === "string") stateId = parseInt(stateId, 10);
+
+  const workflows = await getWorkflows().catch((e) => {
+    throw new Error(e);
+  });
+
+  for (const w of workflows) {
+    const state = w.states.find((state) => state.id === stateId);
+
+    if (state !== undefined) return state;
+  }
+
+  return null;
+};
+
 export const getSelf = () => {
   return get({
     baseURL: "https://api.app.shortcut.com/api/v3/member",

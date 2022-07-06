@@ -9,7 +9,7 @@ import { getConfig } from "./config.js";
 import GitClient from "./git-client.js";
 import { createNewBranch, findBranchByStoryId } from "./git-utils.js";
 import { generateFromKeywords, generateName } from "./name-utils.js";
-import { getStory, shortcutConfig } from "./shortcut-client.js";
+import { getStory, getState, shortcutConfig } from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
 import { assertSuccess } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
@@ -74,9 +74,38 @@ export const createBranch = async (storyId) => {
   }
 };
 
+async function passesStateFilter(story, stateFilter) {
+  if (!stateFilter) return true;
+  if (!story) false; // should never happen
+
+  if (stateFilter.exactly && stateFilter.exactly.length) {
+    return (
+      stateFilter.exactly.find(
+        (elem) => elem.id === story.workflow_state_id
+      ) !== undefined
+    );
+  } else {
+    const state = await getState(story.workflow_state_id);
+
+    if (stateFilter.inBetween) {
+      return (
+        state.position >= stateFilter.inBetween.lowerBound.position &&
+        state.position <= stateFilter.inBetween.upperBound.position
+      );
+    } else if (stateFilter.andAbove) {
+      return state.position >= stateFilter.andAbove.position;
+    } else if (stateFilter.andBelow) {
+      return state.position <= stateFilter.andBelow.position;
+    }
+  }
+
+  // we should never get here - the app validates for state filters missing checks
+  return false;
+}
+
 // first determine if it's even possible to delete the branch given current settings
 // then, prompt
-async function validateDeleteConditions(branchName, storyId) {
+async function validateDeleteConditionsAndPrompt(branchName, storyId) {
   const deleteOpts = getConfig().deleteOptions;
 
   // we're deleting the current branch, see if we can parse out a story id
@@ -97,22 +126,22 @@ async function validateDeleteConditions(branchName, storyId) {
       process.exit();
     });
 
-    // if (
-    //   deleteOpts.stateFilter &&
-    //   deleteOpts.stateFilter.states &&
-    //   deleteOpts.stateFilter.states.length
-    // ) {
-    //   // todo? consider changing schema
-    // }
-    console.log(`We got a story: ${JSON.stringify(story, null, 2)}`);
+    const passes = await passesStateFilter(story, deleteOpts.stateFilter);
+
+    if (!passes) {
+      console.warn(`Branch ${branchName} filtered out by stateFilter`);
+      return false;
+    }
   }
 
   const resp = prompt(`Delete branch '${branchName}' y/[n]? `);
 
   if (resp.length === 0 || resp.toLowerCase() === "n") {
     console.log("Action canceled");
-    return;
+    return false;
   }
+
+  return true;
 }
 
 export const deleteBranch = async (storyId) => {
@@ -137,7 +166,7 @@ export const deleteBranch = async (storyId) => {
         `Error: could not find branch pertaining to story id ${storyId}`
       );
 
-    process.exit();
+    return;
   }
 
   if (
@@ -147,11 +176,17 @@ export const deleteBranch = async (storyId) => {
     console.warn(
       `Cannot delete branch '${branchName}' - use --force to override`
     );
-    process.exit();
+    return;
   }
 
-  if (!config.deleteOptions.force)
-    await validateDeleteConditions(branchName, storyId);
+  if (!config.deleteOptions.force) {
+    const shouldContinue = await validateDeleteConditionsAndPrompt(
+      branchName,
+      storyId
+    );
+
+    if (!shouldContinue) return;
+  }
 
   let remoteName = "";
   let remoteBranchName = "";
