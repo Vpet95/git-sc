@@ -7,7 +7,7 @@ import { existsSync, writeFileSync } from "fs";
 import open from "open";
 import { getConfig } from "./config.js";
 import GitClient from "./git-client.js";
-import { createNewBranch, findBranchByStoryId } from "./git-utils.js";
+import { createNewBranch, findBranchesByStoryId } from "./git-utils.js";
 import { generateFromKeywords, generateName } from "./name-utils.js";
 import {
   getStory,
@@ -17,7 +17,7 @@ import {
   shortcutConfig,
 } from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
-import { assertSuccess, wrapLog } from "./utils.js";
+import { assertSuccess, wrapLog, selectionPrompt } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
 
 import promptSync from "prompt-sync";
@@ -208,20 +208,26 @@ export const deleteBranch = async (
 
   shortcutConfig(config.commonOptions.shortcutApiKey);
 
-  const branchName =
+  let branchName =
     storyId === undefined
       ? git.getCurrentBranchName()
-      : findBranchByStoryId(parseInt(storyId, 10));
+      : findBranchesByStoryId(parseInt(storyId, 10));
 
   if (branchName === undefined) {
-    if (storyId === undefined)
-      console.error("Error: could not find current branch name");
-    else
-      console.error(
-        `Error: could not find branch pertaining to story id ${storyId}`
-      );
-
+    console.error("Error: could not find current branch name");
     return;
+  } else if (Array.isArray(branchName)) {
+    if (branchName.length > 1) {
+      console.log(
+        `Multiple branches contain the story id ${storyId}; select one, or hit enter to cancel`
+      );
+      branchName = selectionPrompt(branchName);
+
+      if (!branchName) {
+        console.log("Ok, canceled");
+        return;
+      }
+    }
   }
 
   if (UNDELETABLE_BRANCHES.includes(branchName) && !shouldForce) {

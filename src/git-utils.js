@@ -27,6 +27,7 @@ export const createNewBranch = (newBranchName, errorHandler) => {
     create: true,
   });
 
+  // todo - add a create option to determine what to do here. User might want to just append a number
   if (!result.success) {
     if (
       result.output.includes("already exists") &&
@@ -59,7 +60,9 @@ export const createNewBranch = (newBranchName, errorHandler) => {
     );
 };
 
-export const findBranchByStoryId = (storyId) => {
+// I'd rather have the caller decide what to do if multiple branches are contain the same story id
+// but I provide some basic error handling here
+export const findBranchesByStoryId = (storyId, errorOnMultiple = false) => {
   if (typeof storyId !== "number")
     throw new Error(
       `argument 'storyId' must be of type 'number'; was type '${typeof storyId}'`
@@ -71,5 +74,12 @@ export const findBranchByStoryId = (storyId) => {
     debug: config.debug,
   });
 
-  return git.listBranches().find((branch) => branch.includes(String(storyId)));
+  const branches = git
+    .listBranches()
+    .filter((branch) => branch.includes(String(storyId)));
+
+  if (errorOnMultiple && branches.length > 1)
+    throw new Error(`Multiple branches containing story id [${storyId}] found`);
+
+  return branches;
 };

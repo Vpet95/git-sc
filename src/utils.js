@@ -5,6 +5,9 @@
 import { URL } from "url";
 import wordwrap from "wordwrapjs";
 
+import promptSync from "prompt-sync";
+const prompt = promptSync();
+
 export const includesAny = (source, ...values) => {
   if (!source) return false;
 
@@ -83,5 +86,40 @@ export const wrapLog = (
     case "log":
     default:
       console.log(outputString);
+  }
+};
+
+const printSelectionList = (items) => {
+  const maxPadLength = String(items.length).length;
+
+  items.forEach((item, index) => {
+    const indexAsStringLength = String(index + 1).length;
+    const padLength = maxPadLength - indexAsStringLength;
+
+    console.log(`${index + 1}: ${item}`.padStart(padLength));
+  });
+};
+
+export const selectionPrompt = (
+  items,
+  repeatListing = false,
+  allowEmpty = true,
+  returnOnEmpty = undefined
+) => {
+  printSelectionList(items);
+
+  while (true) {
+    const resp = prompt(`#${allowEmpty ? " | <enter>" : ""}: `).trim();
+
+    if (resp.length === 0 && allowEmpty) {
+      return returnOnEmpty;
+    } else if (!Number.isNaN(resp) && Math.sign(resp) === 1) {
+      if (parseInt(resp, 10) <= items.length)
+        return items[parseInt(resp, 10) - 1]; // convert it back into an index
+    }
+
+    console.log("Please enter a valid selection");
+
+    if (repeatListing) printSelectionList(items);
   }
 };
