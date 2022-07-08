@@ -92,6 +92,8 @@ git-sc will refuse to delete branches named `develop`, `main`, or `master` as th
 
 By default, git-sc will do some additional safety checks and prompting to make sure only the intended branch gets deleted. This is skippable and configurable.
 
+Since deletion happens by ticket id and not direct branch name, git-sc will also check to see if the supplied story id maps to multiple possible branch names and prompt for a selection from the user.
+
 #### Force deleting
 
 To skip safety checks and prompting, provide the command with the `--force` (or `-f`) option as in:
@@ -101,6 +103,8 @@ git-sc delete 12345 --force
 ```
 
 NOTE: in addition to skipping Shortcut-related checks, the `--force` option will also ignore uncommitted changes and reset them, and perform the unsafe `-D` delete. Only use this option if you know what you're doing.
+
+Duplicate branch name checking and prompting will not be skipped.
 
 #### Delete remote branches
 
