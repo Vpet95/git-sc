@@ -3,7 +3,13 @@ import * as commander from "commander";
 
 import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
 import { getConfig } from "./config.js";
-import { initApp, createBranch, deleteBranch, openStory } from "./app.js";
+import {
+  initApp,
+  createBranch,
+  deleteBranch,
+  cleanBranches,
+  openStory,
+} from "./app.js";
 
 const program = commander.program;
 
@@ -33,10 +39,17 @@ class CommandParser {
         then in the home directory. If no such configuration files are found, git-sc will attempt \
         to run with reasonable defaults, if possible."
       )
+      .option(
+        "-v, --verbose",
+        "Determines whether commands output more verbose information while processing or prompting"
+      )
       .hook("preAction", async (thisCommand, actionCommand) => {
         /* Loads program configuration options prior to any command action. We exclude init because init itself 
            is supposed to generate a brand new configuration file, so it wouldn't make sense to look for existing ones */
-        if (program.opts().debug) this.config.setDebug(program.opts().debug);
+        if ("debug" in program.opts())
+          this.config.setDebug(program.opts().debug);
+        if ("verbose" in program.opts())
+          this.config.setVerbose(program.opts().debug);
 
         if (actionCommand.name() !== "init")
           this.config.load(program.opts().config);
@@ -81,14 +94,43 @@ class CommandParser {
       )
       .option(
         "-r, --remote",
-        "Determines whether the associated remote branch should be deleted as well",
+        "Determines whether the remote branch linked to the local branch should be deleted as well",
         false
+      )
+      .option(
+        "-m, --mine-only",
+        "Limits deletion to only the git branches associated with Shortcut stories you own",
+        true
       )
       .description(
         "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
       )
       .action((storyId, options, __) => {
-        deleteBranch(storyId, options.remote, options.force);
+        deleteBranch(storyId, options.remote, options.force, options.mineOnly);
+      });
+
+    const cleanCommand = new commander.Command("clean");
+    cleanCommand
+      .option(
+        "-f, --force",
+        "Does not check if the associated shortcut story is in a 'done' state, and does not prompt",
+        false
+      )
+      .option(
+        "-r, --remote",
+        "Determines whether the remote branch linked to the local branch should be deleted as well",
+        false
+      )
+      .option(
+        "-m, --mine-only",
+        "Limits cleanup to only the git branches associated with Shortcut stories you own",
+        true
+      )
+      .description(
+        "Systematically scans and deletes local (stale) branches that pass configured filters"
+      )
+      .action((options, __) => {
+        cleanBranches(options.remote, options.force, options.mineOnly);
       });
 
     const openCommand = new commander.Command("open");
@@ -107,6 +149,7 @@ class CommandParser {
     program.addCommand(initCommand);
     program.addCommand(createCommand);
     program.addCommand(deleteCommand);
+    program.addCommand(cleanCommand);
     program.addCommand(openCommand);
 
     program.parse();

@@ -17,22 +17,38 @@ const refValidator = (value, helpers) => {
   return helpers.error("any.invalid");
 };
 
+const purgeSchema = Joi.object({
+  force: Joi.boolean(),
+  remote: Joi.boolean(),
+  mineOnly: Joi.boolean(),
+  stateFilter: Joi.object({
+    exactly: Joi.array().items(Joi.string()),
+    inBetween: Joi.object({
+      lowerBound: Joi.string(),
+      upperBound: Joi.string(),
+    }),
+    andAbove: Joi.string(),
+    andBelow: Joi.string(),
+  }),
+});
+
 // we're allowing unknown fields because they shouldn't disrupt our logic
 const optionsSchema = Joi.object({
   common: Joi.object({
     shortcutApiKey: Joi.string().required(),
     // best we can do, really https://stackoverflow.com/a/537833/3578493
     localGitDirectory: Joi.string().pattern(/^[^\0]+$/),
-    primaryBranch: Joi.string().custom((value, helpers) => {
-      if (GitClient.isValidBranchName(value)) return value;
+    primaryBranch: Joi.string()
+      .custom((value, helpers) => {
+        if (GitClient.isValidBranchName(value)) return value;
 
-      return helpers.error("any.invalid");
-    }, "must be a valid git branch name"),
-    primaryBranchRemote: Joi.string().custom(
-      refValidator,
-      "must be a valid git ref"
-    ),
-  }),
+        return helpers.error("any.invalid");
+      }, "must exist and be a valid git branch name")
+      .required(),
+    primaryBranchRemote: Joi.string()
+      .custom(refValidator, "must exist and be a valid git ref")
+      .required(),
+  }).required(),
   create: Joi.object({
     pullLatest: Joi.boolean(),
     topicTaggingApiKey: Joi.string().min(1), // basically, non-empty
@@ -43,20 +59,15 @@ const optionsSchema = Joi.object({
     overwriteExistingBranch: Joi.boolean(),
     createAndLinkToRemote: Joi.boolean(),
   }).with("topicTaggingApiKey", "rapidApiHost"),
-  delete: Joi.object({
-    force: Joi.boolean(),
-    remote: Joi.boolean(),
-    mineOnly: Joi.boolean(),
-    stateFilter: Joi.object({
-      exactly: Joi.array().items(Joi.string()),
-      inBetween: Joi.object({
-        lowerBound: Joi.string(),
-        upperBound: Joi.string(),
-      }),
-      andAbove: Joi.string(),
-      andBelow: Joi.string(),
-    }),
-  }),
+  delete: purgeSchema,
+  clean: purgeSchema.concat(
+    Joi.object({
+      onTicketNotFound: Joi.string()
+        .valid("delete", "error", "skip")
+        .insensitive()
+        .required(),
+    })
+  ),
   open: Joi.object({
     shortcutWorkspace: Joi.string().allow(""),
   }),
@@ -65,6 +76,7 @@ const optionsSchema = Joi.object({
 class Config {
   configured = false;
   debug = false;
+  verbose = false;
   opts = structuredClone(DEFAULT_OPTIONS);
 
   validate() {
@@ -122,8 +134,9 @@ class Config {
         process.exit();
       }
     }
-    // todo - add additional validation here
-    // > if deleteOptions.stateFilter.inBetween is set, then states needs to have an even number of elements
+
+    // todo - remove
+    // process.exit();
   }
 
   get debug() {
@@ -132,6 +145,14 @@ class Config {
 
   setDebug(value) {
     this.debug = value;
+  }
+
+  get verbose() {
+    return this.verbose;
+  }
+
+  setVerbose(value) {
+    this.verbose = value;
   }
 
   get createOptions() {

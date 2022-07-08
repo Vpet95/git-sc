@@ -3,6 +3,7 @@
  */
 
 import { URL } from "url";
+import wordwrap from "wordwrapjs";
 
 export const includesAny = (source, ...values) => {
   if (!source) return false;
@@ -62,5 +63,25 @@ export const isValidURL = (urlString, protocols = ["http", "https"]) => {
       : true;
   } catch (err) {
     return false;
+  }
+};
+
+export const wrapLog = (
+  inputString,
+  type = "log",
+  width = process.stdout.columns
+) => {
+  const outputString = wordwrap.wrap(inputString, { width });
+
+  switch (type) {
+    case "warn":
+      console.warn(outputString);
+      break;
+    case "error":
+      console.error(outputString);
+      break;
+    case "log":
+    default:
+      console.log(outputString);
   }
 };

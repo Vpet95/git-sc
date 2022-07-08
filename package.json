@@ -21,5 +21,8 @@
     "git-sc": "./index.js"
   },
   "preferGlobal": true,
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "wordwrapjs": "^5.1.0"
+  }
 }

@@ -96,6 +96,13 @@ export const getState = async (stateId) => {
   return null;
 };
 
+export const getMember = (memberId) => {
+  return get({
+    baseURL: "https://api.app.shortcut.com/api/v3/members",
+    resource: memberId,
+  });
+};
+
 export const getSelf = () => {
   return get({
     baseURL: "https://api.app.shortcut.com/api/v3/member",

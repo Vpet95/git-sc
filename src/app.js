@@ -13,10 +13,11 @@ import {
   getStory,
   getState,
   getSelf,
+  getMember,
   shortcutConfig,
 } from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
-import { assertSuccess } from "./utils.js";
+import { assertSuccess, wrapLog } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
 
 import promptSync from "prompt-sync";
@@ -117,8 +118,16 @@ async function passesStateFilter(story, stateFilter) {
 
 // first determine if it's even possible to delete the branch given current settings
 // then, prompt
-async function validateDeleteConditionsAndPrompt(branchName, storyId) {
+async function validateDeleteConditionsAndPrompt(
+  branchName,
+  storyId,
+  mineOnly
+) {
+  let story = null;
+  let promptDescription = "";
+
   const deleteOpts = getConfig().deleteOptions;
+  const deleteMineOnly = deleteOpts.mineOnly || mineOnly;
 
   // we're deleting the current branch, see if we can parse out a story id
   if (storyId === undefined) {
@@ -133,16 +142,17 @@ async function validateDeleteConditionsAndPrompt(branchName, storyId) {
   }
 
   if (storyId !== undefined) {
-    const story = await getStory(parseInt(storyId, 10)).catch((e) => {
+    story = await getStory(parseInt(storyId, 10)).catch((e) => {
       console.error(e);
       process.exit();
     });
 
-    let passes = await passesSelfFilter(story, deleteOpts.mineOnly);
+    let passes = await passesSelfFilter(story, deleteMineOnly);
 
     if (!passes) {
-      console.warn(
-        `Branch ${branchName} is associated with a Shortcut story that is not assigned to you; skipping`
+      wrapLog(
+        `Branch '${branchName}' is associated with a Shortcut story that is not assigned to you; skipping`,
+        "warn"
       );
       return false;
     }
@@ -155,17 +165,38 @@ async function validateDeleteConditionsAndPrompt(branchName, storyId) {
     }
   }
 
-  const resp = prompt(`Delete branch '${branchName}' y/[n]? `);
+  if (getConfig().verbose && story) {
+    promptDescription = ` > Associated with ticket '${story.name}'\n`;
+
+    const state = await getState(story.workflow_state_id);
+    promptDescription += ` > In work state: ${state.name}\n`;
+
+    if (story.owner_ids.length > 0) {
+      const assignee = await getMember(story.owner_ids[0]);
+      promptDescription += ` > Assigned to: ${assignee.profile.name}\n`;
+    }
+  }
+
+  const resp = prompt(
+    `Delete branch '${branchName}'${
+      promptDescription.length ? `\n${promptDescription}` : " "
+    }y/[n]? `
+  );
 
   if (resp.length === 0 || resp.toLowerCase() === "n") {
-    console.log("Action canceled");
+    console.log("Ok, canceled");
     return false;
   }
 
   return true;
 }
 
-export const deleteBranch = async (storyId, remote = false, force = false) => {
+export const deleteBranch = async (
+  storyId,
+  remote = false,
+  force = false,
+  mineOnly = false
+) => {
   const config = getConfig();
   const shouldDeleteRemote = config.deleteOptions.remote || remote;
   const shouldForce = config.deleteOptions.force || force;
@@ -217,7 +248,8 @@ export const deleteBranch = async (storyId, remote = false, force = false) => {
   if (!shouldForce) {
     const shouldContinue = await validateDeleteConditionsAndPrompt(
       branchName,
-      storyId
+      storyId,
+      mineOnly
     );
 
     if (!shouldContinue) return;
@@ -253,6 +285,11 @@ export const deleteBranch = async (storyId, remote = false, force = false) => {
     },
     assertSuccess
   );
+};
+
+// todo
+export const cleanBranches = (remote, force, mineOnly) => {
+  const config = getConfig();
 };
 
 export const openStory = (storyId, workspace = undefined) => {

@@ -32,6 +32,21 @@ export const DEFAULT_OPTIONS = {
       andBelow: "",
     },
   },
+  clean: {
+    force: false,
+    remote: false,
+    mineOnly: true,
+    onTicketNotFound: "",
+    stateFilter: {
+      exactly: [],
+      inBetween: {
+        lowerBound: "",
+        upperBound: "",
+      },
+      andAbove: "",
+      andBelow: "",
+    },
+  },
   open: {
     shortcutWorkspace: "",
   },
