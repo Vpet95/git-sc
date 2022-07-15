@@ -255,23 +255,15 @@ class Config {
     });
   }
 
-  // enriches the stateFilter to something more useful to the app
-  async processDeleteOptions() {
-    if (!this.opts.delete || !this.opts.delete.filters.stateFilter) return;
-    const stateFilter = this.opts.delete.filters.stateFilter;
-
-    shortcutConfig(this.opts.common.shortcutApiKey);
-
+  async #processStateFilter(stateFilter) {
     if (stateFilter.exactly && stateFilter.exactly.length)
-      this.opts.delete.filters.stateFilter.exactly = await stateDataFromNames(
-        stateFilter.exactly
-      );
+      stateFilter.exactly = await stateDataFromNames(stateFilter.exactly);
     else if (stateFilter.andBelow)
-      this.opts.delete.filters.stateFilter.andBelow = (
+      stateFilter.andBelow = (
         await stateDataFromNames([stateFilter.andBelow])
       )[0];
     else if (stateFilter.andAbove)
-      this.opts.delete.filters.stateFilter.andAbove = (
+      stateFilter.andAbove = (
         await stateDataFromNames([stateFilter.andAbove])
       )[0];
     else if (stateFilter.inBetween) {
@@ -280,9 +272,48 @@ class Config {
         stateFilter.inBetween.upperBound,
       ]);
 
-      this.opts.delete.filters.stateFilter.inBetween.lowerBound = results[0];
-      this.opts.delete.filters.stateFilter.inBetween.upperBound = results[1];
+      stateFilter.inBetween.lowerBound = results[0];
+      stateFilter.inBetween.upperBound = results[1];
     }
+  }
+
+  async #processOwnerFilter(ownerFilter) {
+    return; // todo - implement
+  }
+
+  // pre-processes filters for the given command so there's less async work to do later on
+  // when the command is actually being executed
+  async processFilters(commandName) {
+    if (
+      this.opts[commandName] == undefined ||
+      this.opts[commandName].filters == undefined
+    ) {
+      return;
+    }
+
+    shortcutConfig(this.opts.common.shortcutApiKey);
+
+    if ("stateFilter" in this.opts[commandName].filters) {
+      await this.#processStateFilter(
+        this.opts[commandName].filters.stateFilter
+      );
+    }
+
+    if ("ownerFIlter" in this.opts[commandName].filters) {
+      await this.#processOwnerFilter(
+        this.opts[commandName].filters.ownerFilter
+      );
+    }
+
+    return;
+  }
+
+  toString(pretty = true) {
+    return JSON.stringify(this.opts, null, pretty ? 2 : undefined);
+  }
+
+  dump() {
+    console.log(this.toString());
   }
 }
 

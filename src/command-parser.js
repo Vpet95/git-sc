@@ -51,11 +51,12 @@ class CommandParser {
         if ("verbose" in program.opts())
           this.config.setVerbose(program.opts().debug);
 
-        if (actionCommand.name() !== "init")
-          this.config.load(program.opts().config);
+        const name = actionCommand.name();
 
-        if (actionCommand.name() === "delete")
-          await this.config.processDeleteOptions();
+        if (name !== "init") this.config.load(program.opts().config);
+
+        if (name === "delete" || name === "clean")
+          await this.config.processFilters(name);
       });
 
     const initCommand = new commander.Command("init")
@@ -116,13 +117,8 @@ class CommandParser {
         "Determines whether the remote branch linked to the local branch should be deleted as well",
         false
       )
-      .option(
-        "-m, --mine-only",
-        "Limits cleanup to only the git branches associated with Shortcut stories you own",
-        true
-      )
       .description(
-        "Systematically scans and deletes local (stale) branches that pass configured filters"
+        "Systematically scans and deletes local branches that pass configured filters"
       )
       .action((options, __) => {
         cleanBranches(options.remote, options.force);
