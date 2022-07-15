@@ -17,10 +17,7 @@ const refValidator = (value, helpers) => {
   return helpers.error("any.invalid");
 };
 
-const purgeSchema = Joi.object({
-  force: Joi.boolean(),
-  remote: Joi.boolean(),
-  mineOnly: Joi.boolean(),
+const deleteBranchFilterSchema = Joi.object({
   stateFilter: Joi.object({
     exactly: Joi.array().items(Joi.string()),
     inBetween: Joi.object({
@@ -30,6 +27,16 @@ const purgeSchema = Joi.object({
     andAbove: Joi.string(),
     andBelow: Joi.string(),
   }),
+  ownerFilter: Joi.object({
+    only: Joi.array().items(Joi.string()),
+    not: Joi.array().items(Joi.string()),
+  }),
+});
+
+const purgeSchema = Joi.object({
+  force: Joi.boolean(),
+  remote: Joi.boolean(),
+  filter: deleteBranchFilterSchema,
 });
 
 // we're allowing unknown fields because they shouldn't disrupt our logic
@@ -112,13 +119,13 @@ class Config {
 
     // on initial release we don't want to allow multiple filter options at once.
     // Validating whether the resulting filter makes any sense is more trouble than it's worth; also a single filter covers most if not all use cases
-    if (this.opts.delete && this.opts.delete.stateFilter) {
+    if (this.opts.delete && this.opts.delete.filters.stateFilter) {
       let optionCount = 0;
 
-      if (this.opts.delete.stateFilter.exactly) optionCount++;
-      if (this.opts.delete.stateFilter.andAbove) optionCount++;
-      if (this.opts.delete.stateFilter.andBelow) optionCount++;
-      if (this.opts.delete.stateFilter.inBetween) optionCount++;
+      if (this.opts.delete.filters.stateFilter.exactly) optionCount++;
+      if (this.opts.delete.filters.stateFilter.andAbove) optionCount++;
+      if (this.opts.delete.filters.stateFilter.andBelow) optionCount++;
+      if (this.opts.delete.filters.stateFilter.inBetween) optionCount++;
 
       if (optionCount > 1) {
         console.error(
@@ -136,7 +143,7 @@ class Config {
     }
 
     // todo - remove
-    // process.exit();
+    //process.exit();
   }
 
   get debug() {
@@ -188,22 +195,41 @@ class Config {
     return JSON.stringify(defaults, null, 2);
   }
 
+  #storeConfig(configFile) {
+    try {
+      const configData = fs.readFileSync(configFile);
+
+      // obtain user's input configuration file
+      const configJSON = JSON.parse(configData);
+      const configKeys = Object.keys(configJSON);
+
+      // overlay config over default settings
+      Object.assign(this.opts, configJSON);
+
+      // collect a list of toplevel options user specified
+      const unusedKeys = Object.keys(this.opts).filter(
+        (key) => !configKeys.includes(key)
+      );
+
+      // remove any toplevel keys not specific by the user
+      // (necessary to avoid validating default/unspecified configuration)
+      unusedKeys.forEach((key) => {
+        delete this.opts[key];
+      });
+    } catch (e) {
+      console.error(`Could not process or store configuration.\n${e.message}`);
+      process.exit();
+    }
+  }
+
   load(configFile) {
     if (this.configured) return;
 
     if (configFile) {
-      try {
-        if (this.debug)
-          console.log(`Attempting to load configuration from ${configFile}`);
+      if (this.debug)
+        console.log(`Attempting to load configuration from ${configFile}`);
 
-        Object.assign(this.opts, JSON.parse(fs.readFileSync(configFile)));
-      } catch (e) {
-        console.error(
-          `Could not parse configuration file ${configFile}\n${e.message}`
-        );
-        process.exit();
-      }
-
+      this.#storeConfig(configFile);
       this.validate();
 
       this.configured = true;
@@ -214,28 +240,15 @@ class Config {
     DEFAULT_CONFIG_LOCATIONS.every((loc) => {
       const fileName = resolve(`${loc}/${DEFAULT_CONFIG_FILENAME}`);
 
-      try {
-        if (this.debug)
-          console.log(`Attempting to load configuration from ${fileName}`);
+      if (this.debug)
+        console.log(`Attempting to load configuration from ${fileName}`);
 
-        const data = fs.readFileSync(fileName);
+      if (fs.existsSync(fileName)) {
+        this.#storeConfig(fileName);
+        this.validate();
+        this.configured = true;
 
-        try {
-          Object.assign(this.opts, JSON.parse(data));
-          this.validate();
-
-          this.configured = true;
-          return false;
-        } catch (e) {
-          console.error(
-            `Could not parse configuration file ${fileName}\n${e.message}`
-          );
-          process.exit();
-        }
-      } catch (e) {
-        /* file likely doesn't exist - do nothing */
-        if (this.debug)
-          console.log(`Could not open file ${fileName}\n${e.message}`);
+        return false; // exits the loop
       }
 
       return true;
@@ -244,21 +257,21 @@ class Config {
 
   // enriches the stateFilter to something more useful to the app
   async processDeleteOptions() {
-    if (!this.opts.delete || !this.opts.delete.stateFilter) return;
-    const stateFilter = this.opts.delete.stateFilter;
+    if (!this.opts.delete || !this.opts.delete.filters.stateFilter) return;
+    const stateFilter = this.opts.delete.filters.stateFilter;
 
     shortcutConfig(this.opts.common.shortcutApiKey);
 
     if (stateFilter.exactly && stateFilter.exactly.length)
-      this.opts.delete.stateFilter.exactly = await stateDataFromNames(
+      this.opts.delete.filters.stateFilter.exactly = await stateDataFromNames(
         stateFilter.exactly
       );
     else if (stateFilter.andBelow)
-      this.opts.delete.stateFilter.andBelow = (
+      this.opts.delete.filters.stateFilter.andBelow = (
         await stateDataFromNames([stateFilter.andBelow])
       )[0];
     else if (stateFilter.andAbove)
-      this.opts.delete.stateFilter.andAbove = (
+      this.opts.delete.filters.stateFilter.andAbove = (
         await stateDataFromNames([stateFilter.andAbove])
       )[0];
     else if (stateFilter.inBetween) {
@@ -267,8 +280,8 @@ class Config {
         stateFilter.inBetween.upperBound,
       ]);
 
-      this.opts.delete.stateFilter.inBetween.lowerBound = results[0];
-      this.opts.delete.stateFilter.inBetween.upperBound = results[1];
+      this.opts.delete.filters.stateFilter.inBetween.lowerBound = results[0];
+      this.opts.delete.filters.stateFilter.inBetween.upperBound = results[1];
     }
   }
 }

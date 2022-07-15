@@ -122,15 +122,20 @@ For extra saftey you can configure git-sc to only allow deletion of branches who
 "delete": {
   "force": false,
   "remote": false,
-  "mineOnly": true,
-  "stateFilter": {
-    "exactly": [],
-    "inBetween": {
-      "lowerBound": "",
-      "upperBound": ""
+  "filters": {
+    "stateFilter": {
+      "exactly": [],
+      "inBetween": {
+        "lowerBound": "",
+        "upperBound": ""
+      },
+      "andAbove": "",
+      "andBelow": ""
     },
-    "andAbove": "",
-    "andBelow": ""
+    "ownerFilter": {
+      "only": [],
+      "not": []
+    }
   }
 },
 ```
@@ -142,11 +147,35 @@ The `stateFilter` above allows you to configure ranges of Shortcut ticket states
 - `andAbove`: specify the name of a state, and git-sc will allow deletion of any ticket that is within this state or above
 - `andBelow`: specify the name of a state, and git-sc will allow deletion of any ticket that is within this state or below
 
-Note: git-sc expects only one of these to be present in the state filter.
+**git-sc expects only one of the given options to be present in the state filter.**
 
 States are strings representing the state of the work of the Shortcut ticket item, e.g. 'Backlog', 'In Review', 'Blocked', 'In Production', etc.
 
-Additionally you can configure git-sc to only allow deletion of branches associated with Shortcut stories assigned to you via the `mineOnly` field.
+The `ownerFilter` above allows you to narrow down the list of potential branches to be deleted by a list of Shortcut ticket owner names. This filter accepts two options:
+
+- `only`: supply an array of strings representing Shortcut ticket owner names to allow deletion
+- `not`: the inverse of above - delete allowed if branch corresponds to a Shortcut ticket owned by someone not in this list.
+
+Acceptable values for the owner filter options include:
+
+- `"self"` - representing the currently authenticated user (via the Shortcut API key), a shorthand for referring to self without writing out your full name
+- `"other"` - representing `!self`
+- `<Shortcut user name>` - the name of any user in your Shortcut workspace - make sure it's written as it appears in the owner field of ticket items.
+
+You use the `ownerFilter` in conjunction with the `stateFilter` to narrow down the deletable branch list further. For instance:
+
+```
+"filters": {
+  "stateFilter": {
+    "andAbove": "On Dev"
+  },
+  "ownerFilter": {
+    "not": ["self"]
+  }
+}
+```
+
+The filter configuration above will allow git-sc to only delete branches associated with Shortcut tickets assigned to you, and are in a state of "On Dev" or above (e.g. On Prod, etc.)
 
 ### Opening a Shortcut Ticket
 

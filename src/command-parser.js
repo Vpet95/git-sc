@@ -97,16 +97,11 @@ class CommandParser {
         "Determines whether the remote branch linked to the local branch should be deleted as well",
         false
       )
-      .option(
-        "-m, --mine-only",
-        "Limits deletion to only the git branches associated with Shortcut stories you own",
-        true
-      )
       .description(
         "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
       )
       .action((storyId, options, __) => {
-        deleteBranch(storyId, options.remote, options.force, options.mineOnly);
+        deleteBranch(storyId, options.remote, options.force);
       });
 
     const cleanCommand = new commander.Command("clean");
@@ -130,7 +125,7 @@ class CommandParser {
         "Systematically scans and deletes local (stale) branches that pass configured filters"
       )
       .action((options, __) => {
-        cleanBranches(options.remote, options.force, options.mineOnly);
+        cleanBranches(options.remote, options.force);
       });
 
     const openCommand = new commander.Command("open");

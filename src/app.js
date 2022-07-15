@@ -80,13 +80,15 @@ export const createBranch = async (storyId) => {
   }
 };
 
-async function passesSelfFilter(story, mineOnly) {
-  if (!mineOnly) return true; // covers undefined and null as well - if it's not set, it's false by default
+// async function passesSelfFilter(story) {
+//   if (!mineOnly) return true; // covers undefined and null as well - if it's not set, it's false by default
 
-  const self = await getSelf();
-  return story.owner_ids.includes(self.id);
-}
+//   const self = await getSelf();
+//   return story.owner_ids.includes(self.id);
+// }
 
+// todo - idea for refactoring: on config parse, convert filter JSON object into a full Object with
+// methods that do the filtering
 async function passesStateFilter(story, stateFilter) {
   if (!stateFilter) return true;
   if (!story) false; // should never happen
@@ -118,16 +120,11 @@ async function passesStateFilter(story, stateFilter) {
 
 // first determine if it's even possible to delete the branch given current settings
 // then, prompt
-async function validateDeleteConditionsAndPrompt(
-  branchName,
-  storyId,
-  mineOnly
-) {
+async function validateDeleteConditionsAndPrompt(branchName, storyId) {
   let story = null;
   let promptDescription = "";
 
   const deleteOpts = getConfig().deleteOptions;
-  const deleteMineOnly = deleteOpts.mineOnly || mineOnly;
 
   // we're deleting the current branch, see if we can parse out a story id
   if (storyId === undefined) {
@@ -147,17 +144,10 @@ async function validateDeleteConditionsAndPrompt(
       process.exit();
     });
 
-    let passes = await passesSelfFilter(story, deleteMineOnly);
-
-    if (!passes) {
-      wrapLog(
-        `Branch '${branchName}' is associated with a Shortcut story that is not assigned to you; skipping`,
-        "warn"
-      );
-      return false;
-    }
-
-    passes = await passesStateFilter(story, deleteOpts.stateFilter);
+    const passes = await passesStateFilter(
+      story,
+      deleteOpts.filters.stateFilter
+    );
 
     if (!passes) {
       console.warn(`Branch ${branchName} filtered out by stateFilter`);
@@ -191,12 +181,7 @@ async function validateDeleteConditionsAndPrompt(
   return true;
 }
 
-export const deleteBranch = async (
-  storyId,
-  remote = false,
-  force = false,
-  mineOnly = false
-) => {
+export const deleteBranch = async (storyId, remote = false, force = false) => {
   const config = getConfig();
   const shouldDeleteRemote = config.deleteOptions.remote || remote;
   const shouldForce = config.deleteOptions.force || force;
@@ -254,8 +239,7 @@ export const deleteBranch = async (
   if (!shouldForce) {
     const shouldContinue = await validateDeleteConditionsAndPrompt(
       branchName,
-      storyId,
-      mineOnly
+      storyId
     );
 
     if (!shouldContinue) return;
@@ -294,7 +278,7 @@ export const deleteBranch = async (
 };
 
 // todo
-export const cleanBranches = (remote, force, mineOnly) => {
+export const cleanBranches = (remote, force) => {
   const config = getConfig();
 };
 

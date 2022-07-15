@@ -1,6 +1,22 @@
 export const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 export const DEFAULT_CONFIG_LOCATIONS = ["./", "~/"];
 
+const branchDeletionFilters = {
+  stateFilter: {
+    exactly: [],
+    inBetween: {
+      lowerBound: "",
+      upperBound: "",
+    },
+    andAbove: "",
+    andBelow: "",
+  },
+  ownerFilter: {
+    only: [],
+    not: [],
+  },
+};
+
 export const DEFAULT_OPTIONS = {
   common: {
     shortcutApiKey: "",
@@ -21,31 +37,13 @@ export const DEFAULT_OPTIONS = {
   delete: {
     force: false,
     remote: false,
-    mineOnly: true,
-    stateFilter: {
-      exactly: [],
-      inBetween: {
-        lowerBound: "",
-        upperBound: "",
-      },
-      andAbove: "",
-      andBelow: "",
-    },
+    filters: structuredClone(branchDeletionFilters),
   },
   clean: {
     force: false,
     remote: false,
-    mineOnly: true,
     onTicketNotFound: "",
-    stateFilter: {
-      exactly: [],
-      inBetween: {
-        lowerBound: "",
-        upperBound: "",
-      },
-      andAbove: "",
-      andBelow: "",
-    },
+    filters: structuredClone(branchDeletionFilters),
   },
   open: {
     shortcutWorkspace: "",
