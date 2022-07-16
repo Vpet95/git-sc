@@ -7,7 +7,7 @@ import {
   DEFAULT_OPTIONS,
 } from "./constants.js";
 import { includesAny } from "./utils.js";
-import { setShortcutAPIKey } from "./shortcut-client.js";
+import { setShortcutAPIKey, getMembers } from "./shortcut-client.js";
 import { stateDataFromNames } from "./shortcut-utils.js";
 import GitClient from "./git-client.js";
 
@@ -277,7 +277,33 @@ class Config {
     }
   }
 
-  async #processOwnerFilter(ownerFilter) {}
+  #processNameFilterList(filterList, workspaceMembers) {
+    return filterList
+      .filter((name, index, list) => list.indexOf(name) === index)
+      .map((name) => {
+        const member = workspaceMembers.find(
+          (m) => m.profile.name.toLowerCase() === name.toLowerCase()
+        );
+
+        if (member === undefined) {
+          console.error(
+            `Error: name '${name}' does not refer to any member of your Shortcut workspace`
+          );
+        }
+
+        return member.profile.id;
+      });
+  }
+
+  async #processOwnerFilter(ownerFilter) {
+    const members = await getMembers();
+
+    if (ownerFilter.any && ownerFilter.any.length) {
+      ownerFilter.any = this.#processNameFilterList(ownerFilter.any, members);
+    } else if (ownerFilter.not && ownerFilter.not.length) {
+      ownerFilter.not = this.#processNameFilterList(ownerFilter.not, members);
+    }
+  }
 
   // pre-processes filters for the given command so there's less async work to do later on
   // when the command is actually being executed
@@ -297,7 +323,7 @@ class Config {
       );
     }
 
-    if ("ownerFIlter" in this.opts[commandName].filters) {
+    if ("ownerFilter" in this.opts[commandName].filters) {
       await this.#processOwnerFilter(
         this.opts[commandName].filters.ownerFilter
       );
