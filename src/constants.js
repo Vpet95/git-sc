@@ -12,7 +12,7 @@ const branchDeletionFilters = {
     andBelow: "",
   },
   ownerFilter: {
-    only: [],
+    any: [],
     not: [],
   },
 };

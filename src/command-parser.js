@@ -102,6 +102,8 @@ class CommandParser {
         "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
       )
       .action((storyId, options, __) => {
+        this.config.dump();
+        process.exit();
         deleteBranch(storyId, options.remote, options.force);
       });
 

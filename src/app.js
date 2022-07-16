@@ -14,7 +14,7 @@ import {
   getState,
   getSelf,
   getMember,
-  shortcutConfig,
+  setShortcutAPIKey,
 } from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
 import { assertSuccess, wrapLog, selectionPrompt } from "./utils.js";
@@ -63,7 +63,7 @@ export const createBranch = async (storyId) => {
   const config = getConfig();
 
   /* Configure the libraries */
-  shortcutConfig(config.commonOptions.shortcutApiKey);
+  setShortcutAPIKey(config.commonOptions.shortcutApiKey);
   twinwordConfig(
     config.createOptions.rapidApiHost,
     config.createOptions.topicTaggingApiKey
@@ -191,7 +191,7 @@ export const deleteBranch = async (storyId, remote = false, force = false) => {
     debug: config.debug,
   });
 
-  shortcutConfig(config.commonOptions.shortcutApiKey);
+  setShortcutAPIKey(config.commonOptions.shortcutApiKey);
 
   let branchName =
     storyId === undefined

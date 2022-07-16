@@ -3,8 +3,18 @@ import { isValidURL, generateURL } from "./utils.js";
 
 let API_KEY = "";
 
-export const shortcutConfig = (apiToken) => {
-  API_KEY = apiToken || process.env.SC_TOKEN;
+// a little safeguard - at this time at no point should git-sc be processing multiple API requests
+// at once - if it is, I'm most likely missing an await somewhere
+let requestCount = 0;
+
+const shortcutCache = {
+  members: null,
+  workflows: null,
+  self: null,
+};
+
+export const setShortcutAPIKey = (key) => {
+  API_KEY = key || process.env.SC_KEY;
 
   if (!API_KEY) {
     console.error("Missing Shortcut API key - program terminating");
@@ -19,6 +29,12 @@ const get = (
   // assemble and validate a full url; final possible output looks like: https://www.somesite.com/1234?param1="abc"&param2="def"
   const fullURL = generateURL({ baseURL, resource, params });
   if (!isValidURL(fullURL)) throw new Error(`[${fullURL}] is not a valid URL`);
+
+  requestCount++;
+  if (requestCount > 1)
+    throw new Error(
+      "Yikes! Attempted multiple concurrent requests - git-sc must be missing an 'await' call somewhere"
+    );
 
   return new Promise((resolve, reject) => {
     https
@@ -46,6 +62,8 @@ const get = (
           });
 
           res.on("end", () => {
+            requestCount--;
+
             try {
               const parsedData = JSON.parse(rawData);
               resolve(parsedData);
@@ -58,10 +76,31 @@ const get = (
         }
       )
       .on("error", (e) => {
+        requestCount--;
         reject(e.message);
         return;
       });
   });
+};
+
+const getCached = async ({ cacheKey, ...opts }, expectedStatusCode) => {
+  if (cacheKey) {
+    if (!(cacheKey in shortcutCache)) {
+      throw new Error(`Shortcut API Cache has no key '${cacheKey}'`);
+    }
+
+    if (shortcutCache[cacheKey]) {
+      return Promise.resolve(shortcutCache[cacheKey]);
+    }
+  }
+
+  const result = await get(opts, expectedStatusCode);
+
+  if (cacheKey) {
+    shortcutCache[cacheKey] = result;
+  }
+
+  return result;
 };
 
 export const getStory = (ticketId) => {
@@ -72,8 +111,9 @@ export const getStory = (ticketId) => {
 };
 
 export const getWorkflows = () => {
-  return get({
+  return getCached({
     baseURL: "https://api.app.shortcut.com/api/v3/workflows",
+    cacheKey: "workflows",
   });
 };
 
@@ -96,7 +136,21 @@ export const getState = async (stateId) => {
   return null;
 };
 
-export const getMember = (memberId) => {
+export const getMembers = () => {
+  return getCached({
+    baseURL: "https://api.app.shortcut.com/api/v3/members",
+    cacheKey: "members",
+  });
+};
+
+export const getMember = async (memberId) => {
+  // pull from local cache if any, otherwise call API
+  if (shortcutCache.members) {
+    return Promise.resolve(
+      shortcutCache.members.find((member) => member.id === memberId)
+    );
+  }
+
   return get({
     baseURL: "https://api.app.shortcut.com/api/v3/members",
     resource: memberId,
@@ -104,9 +158,8 @@ export const getMember = (memberId) => {
 };
 
 export const getSelf = () => {
-  return get({
+  return getCached({
     baseURL: "https://api.app.shortcut.com/api/v3/member",
+    cacheKey: "self",
   });
 };
-
-// todo - need a way to get current user's name or id

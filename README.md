@@ -153,7 +153,7 @@ States are strings representing the state of the work of the Shortcut ticket ite
 
 The `ownerFilter` above allows you to narrow down the list of potential branches to be deleted by a list of Shortcut ticket owner names. This filter accepts two options:
 
-- `only`: supply an array of strings representing Shortcut ticket owner names to allow deletion
+- `any`: supply an array of strings representing Shortcut ticket owner names to allow deletion
 - `not`: the inverse of above - delete allowed if branch corresponds to a Shortcut ticket owned by someone not in this list.
 
 Acceptable values for the owner filter options include:
@@ -207,7 +207,7 @@ If no configuration file is found, git-sc will quit.
 
 git-sc supports the following environment variables:
 
-- `SC_TOKEN`: specifies the Shortcut API key
+- `SC_KEY`: specifies the Shortcut API key
 - `TWINWORD_TOKEN`: specifies the Twinword topic tagging API key
 - `RAPID_HOST`: specifies the RapidAPI host URL
 

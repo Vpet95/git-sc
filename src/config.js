@@ -7,7 +7,7 @@ import {
   DEFAULT_OPTIONS,
 } from "./constants.js";
 import { includesAny } from "./utils.js";
-import { shortcutConfig } from "./shortcut-client.js";
+import { setShortcutAPIKey } from "./shortcut-client.js";
 import { stateDataFromNames } from "./shortcut-utils.js";
 import GitClient from "./git-client.js";
 
@@ -28,7 +28,7 @@ const deleteBranchFilterSchema = Joi.object({
     andBelow: Joi.string(),
   }),
   ownerFilter: Joi.object({
-    only: Joi.array().items(Joi.string()),
+    any: Joi.array().items(Joi.string()),
     not: Joi.array().items(Joi.string()),
   }),
 });
@@ -277,9 +277,7 @@ class Config {
     }
   }
 
-  async #processOwnerFilter(ownerFilter) {
-    return; // todo - implement
-  }
+  async #processOwnerFilter(ownerFilter) {}
 
   // pre-processes filters for the given command so there's less async work to do later on
   // when the command is actually being executed
@@ -291,7 +289,7 @@ class Config {
       return;
     }
 
-    shortcutConfig(this.opts.common.shortcutApiKey);
+    setShortcutAPIKey(this.opts.common.shortcutApiKey);
 
     if ("stateFilter" in this.opts[commandName].filters) {
       await this.#processStateFilter(
