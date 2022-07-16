@@ -12,12 +12,11 @@ import { generateFromKeywords, generateName } from "./name-utils.js";
 import {
   getStory,
   getState,
-  getSelf,
   getMember,
   setShortcutAPIKey,
 } from "./shortcut-client.js";
 import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
-import { assertSuccess, wrapLog, selectionPrompt } from "./utils.js";
+import { assertSuccess, selectionPrompt } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
 
 import promptSync from "prompt-sync";
@@ -87,37 +86,6 @@ export const createBranch = async (storyId) => {
 //   return story.owner_ids.includes(self.id);
 // }
 
-// todo - idea for refactoring: on config parse, convert filter JSON object into a full Object with
-// methods that do the filtering
-async function passesStateFilter(story, stateFilter) {
-  if (!stateFilter) return true;
-  if (!story) false; // should never happen
-
-  if (stateFilter.exactly) {
-    return (
-      stateFilter.exactly.find(
-        (elem) => elem.id === story.workflow_state_id
-      ) !== undefined
-    );
-  } else {
-    const state = await getState(story.workflow_state_id);
-
-    if (stateFilter.inBetween) {
-      return (
-        state.position >= stateFilter.inBetween.lowerBound.position &&
-        state.position <= stateFilter.inBetween.upperBound.position
-      );
-    } else if (stateFilter.andAbove) {
-      return state.position >= stateFilter.andAbove.position;
-    } else if (stateFilter.andBelow) {
-      return state.position <= stateFilter.andBelow.position;
-    }
-  }
-
-  // we should never get here - the app validates for state filters missing checks
-  return false;
-}
-
 // first determine if it's even possible to delete the branch given current settings
 // then, prompt
 async function validateDeleteConditionsAndPrompt(branchName, storyId) {
@@ -144,10 +112,7 @@ async function validateDeleteConditionsAndPrompt(branchName, storyId) {
       process.exit();
     });
 
-    const passes = await passesStateFilter(
-      story,
-      deleteOpts.filters.stateFilter
-    );
+    const passes = await deleteOpts.filters.stateFilterPasses(story);
 
     if (!passes) {
       console.warn(`Branch ${branchName} filtered out by stateFilter`);
