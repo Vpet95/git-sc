@@ -1,6 +1,8 @@
 export const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 export const DEFAULT_CONFIG_LOCATIONS = ["./", "~/"];
 
+export const FILTERED_COMMANDS = ["delete", "clean"];
+
 const branchDeletionFilters = {
   stateFilter: {
     exactly: [],

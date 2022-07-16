@@ -2,14 +2,15 @@ import { resolve } from "path";
 import fs from "fs";
 import Joi from "joi";
 import {
+  FILTERED_COMMANDS,
   DEFAULT_CONFIG_FILENAME,
   DEFAULT_CONFIG_LOCATIONS,
   DEFAULT_OPTIONS,
 } from "./constants.js";
 import { includesAny } from "./utils.js";
-import { setShortcutAPIKey, getMembers } from "./shortcut-client.js";
-import { stateDataFromNames } from "./shortcut-utils.js";
+import { setShortcutAPIKey } from "./shortcut-client.js";
 import GitClient from "./git-client.js";
+import { Filter } from "./filter.js";
 
 const refValidator = (value, helpers) => {
   if (GitClient.isValidRefName(value)) return value;
@@ -201,92 +202,50 @@ class Config {
     }
   }
 
-  load(configFile) {
+  async load(configFile, commandName = "") {
     if (this.configured) return;
 
     if (configFile) {
+      if (!fs.existsSync(configFile))
+        throw new Error(`Could not find file '${configFile}'`);
+
       if (this.debug)
         console.log(`Attempting to load configuration from ${configFile}`);
 
       this.#storeConfig(configFile);
       this.validate();
 
+      await this.#processFilters(commandName);
+
       this.configured = true;
       return;
     }
 
     // no config file supplied, look in the default locations
-    DEFAULT_CONFIG_LOCATIONS.every((loc) => {
-      const fileName = resolve(`${loc}/${DEFAULT_CONFIG_FILENAME}`);
+    const fp = DEFAULT_CONFIG_LOCATIONS.find((filePath) =>
+      fs.existsSync(resolve(`${filePath}/${DEFAULT_CONFIG_FILENAME}`))
+    );
 
-      if (this.debug)
-        console.log(`Attempting to load configuration from ${fileName}`);
-
-      if (fs.existsSync(fileName)) {
-        this.#storeConfig(fileName);
-        this.validate();
-        this.configured = true;
-
-        return false; // exits the loop
-      }
-
-      return true;
-    });
-  }
-
-  async #processStateFilter(stateFilter) {
-    if (stateFilter.exactly)
-      stateFilter.exactly = await stateDataFromNames(stateFilter.exactly);
-    else if (stateFilter.andBelow)
-      stateFilter.andBelow = (
-        await stateDataFromNames([stateFilter.andBelow])
-      )[0];
-    else if (stateFilter.andAbove)
-      stateFilter.andAbove = (
-        await stateDataFromNames([stateFilter.andAbove])
-      )[0];
-    else if (stateFilter.inBetween) {
-      const results = await stateDataFromNames([
-        stateFilter.inBetween.lowerBound,
-        stateFilter.inBetween.upperBound,
-      ]);
-
-      stateFilter.inBetween.lowerBound = results[0];
-      stateFilter.inBetween.upperBound = results[1];
+    if (!fp) {
+      throw new Error("No git-sc configuration file found");
     }
+
+    const fileName = resolve(`${fp}/${DEFAULT_CONFIG_FILENAME}`);
+
+    if (this.debug)
+      console.log(`Attempting to load configuration from ${fileName}`);
+
+    this.#storeConfig(fileName);
+    this.validate();
+
+    await this.#processFilters(commandName);
+
+    this.configured = true;
   }
 
-  #processNameFilterList(filterList, workspaceMembers) {
-    return filterList
-      .filter((name, index, list) => list.indexOf(name) === index)
-      .map((name) => {
-        const member = workspaceMembers.find(
-          (m) => m.profile.name.toLowerCase() === name.toLowerCase()
-        );
+  async #processFilters(commandName) {
+    if (!FILTERED_COMMANDS.includes(commandName)) return;
 
-        if (member === undefined) {
-          console.error(
-            `Error: name '${name}' does not refer to any member of your Shortcut workspace`
-          );
-        }
-
-        return member.profile.id;
-      });
-  }
-
-  async #processOwnerFilter(ownerFilter) {
-    const members = await getMembers();
-
-    if (ownerFilter.any) {
-      ownerFilter.any = this.#processNameFilterList(ownerFilter.any, members);
-    } else if (ownerFilter.not) {
-      ownerFilter.not = this.#processNameFilterList(ownerFilter.not, members);
-    }
-  }
-
-  // pre-processes filters for the given command so there's less async work to do later on
-  // when the command is actually being executed
-  async processFilters(commandName) {
     if (
       this.opts[commandName] == undefined ||
       this.opts[commandName].filters == undefined
@@ -296,19 +255,8 @@ class Config {
 
     setShortcutAPIKey(this.opts.common.shortcutApiKey);
 
-    if ("stateFilter" in this.opts[commandName].filters) {
-      await this.#processStateFilter(
-        this.opts[commandName].filters.stateFilter
-      );
-    }
-
-    if ("ownerFilter" in this.opts[commandName].filters) {
-      await this.#processOwnerFilter(
-        this.opts[commandName].filters.ownerFilter
-      );
-    }
-
-    return;
+    this.opts[commandName].filters = new Filter(this.opts[commandName].filters);
+    await this.opts[commandName].filters.unpack();
   }
 
   toString(pretty = true) {

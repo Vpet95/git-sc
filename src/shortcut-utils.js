@@ -25,6 +25,8 @@ export const stateDataFromNames = async (stateNames) => {
     throw new Error(e);
   });
 
+  console.log(`Workflows: ${workflows.length}`);
+
   const states = stateNames.map((stateName) =>
     getStateData(workflows, stateName)
   );
