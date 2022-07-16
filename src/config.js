@@ -26,11 +26,15 @@ const deleteBranchFilterSchema = Joi.object({
     }),
     andAbove: Joi.string(),
     andBelow: Joi.string(),
-  }).oxor("exactly", "inBetween", "andAbove", "andBelow"),
+  })
+    .oxor("exactly", "inBetween", "andAbove", "andBelow")
+    .min(1),
   ownerFilter: Joi.object({
     any: Joi.array().items(Joi.string()).min(1),
     not: Joi.array().items(Joi.string()).min(1),
-  }).oxor("any", "not"),
+  })
+    .oxor("any", "not")
+    .min(1),
 });
 
 const purgeSchema = Joi.object({
@@ -117,24 +121,8 @@ class Config {
       process.exit();
     }
 
-    // on initial release we don't want to allow multiple filter options at once.
-    // Validating whether the resulting filter makes any sense is more trouble than it's worth; also a single filter covers most if not all use cases
-    if (this.opts.delete) {
-      if (this.opts.delete.filters.stateFilter) {
-        // let optionCount = 0;
-        // if (optionCount === 0) {
-        //   // looks like they started writing a filter and got distracted by a shiny object. Deleting branches is serious and I would rather
-        //   // risk being annoying and have the user double-check than delete an unintended branch
-        //   console.error(
-        //     "No options were provided to the stateFilter.\nExpected one of 'exactly', 'inBetween', 'andAbove', 'andBelow'"
-        //   );
-        //   process.exit();
-        // }
-      }
-    }
-
     // todo - remove
-    process.exit();
+    // process.exit();
   }
 
   get debug() {
