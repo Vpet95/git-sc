@@ -19,24 +19,24 @@ const refValidator = (value, helpers) => {
 
 const deleteBranchFilterSchema = Joi.object({
   stateFilter: Joi.object({
-    exactly: Joi.array().items(Joi.string()),
+    exactly: Joi.array().items(Joi.string()).min(1),
     inBetween: Joi.object({
       lowerBound: Joi.string(),
       upperBound: Joi.string(),
     }),
     andAbove: Joi.string(),
     andBelow: Joi.string(),
-  }),
+  }).oxor("exactly", "inBetween", "andAbove", "andBelow"),
   ownerFilter: Joi.object({
-    any: Joi.array().items(Joi.string()),
-    not: Joi.array().items(Joi.string()),
-  }),
+    any: Joi.array().items(Joi.string()).min(1),
+    not: Joi.array().items(Joi.string()).min(1),
+  }).oxor("any", "not"),
 });
 
 const purgeSchema = Joi.object({
   force: Joi.boolean(),
   remote: Joi.boolean(),
-  filter: deleteBranchFilterSchema,
+  filters: deleteBranchFilterSchema,
 });
 
 // we're allowing unknown fields because they shouldn't disrupt our logic
@@ -113,37 +113,28 @@ class Config {
         }
       });
 
-      console.error(`Your settings:\n${JSON.stringify(this.opts, null, 2)}`);
+      // console.error(`Your settings:\n${JSON.stringify(this.opts, null, 2)}`);
       process.exit();
     }
 
     // on initial release we don't want to allow multiple filter options at once.
     // Validating whether the resulting filter makes any sense is more trouble than it's worth; also a single filter covers most if not all use cases
-    if (this.opts.delete && this.opts.delete.filters.stateFilter) {
-      let optionCount = 0;
-
-      if (this.opts.delete.filters.stateFilter.exactly) optionCount++;
-      if (this.opts.delete.filters.stateFilter.andAbove) optionCount++;
-      if (this.opts.delete.filters.stateFilter.andBelow) optionCount++;
-      if (this.opts.delete.filters.stateFilter.inBetween) optionCount++;
-
-      if (optionCount > 1) {
-        console.error(
-          "Multiple filter conditions detected in the delete options stateFilter.\nPlease review your settings and narrow the stateFilter to one condition."
-        );
-        process.exit();
-      } else if (optionCount === 0) {
-        // looks like they started writing a filter and got distracted by a shiny object. Deleting branches is serious and I would rather
-        // risk being annoying and have the user double-check than delete an unintended branch
-        console.error(
-          "No options were provided to the stateFilter.\nExpected one of 'exactly', 'inBetween', 'andAbove', 'andBelow'"
-        );
-        process.exit();
+    if (this.opts.delete) {
+      if (this.opts.delete.filters.stateFilter) {
+        // let optionCount = 0;
+        // if (optionCount === 0) {
+        //   // looks like they started writing a filter and got distracted by a shiny object. Deleting branches is serious and I would rather
+        //   // risk being annoying and have the user double-check than delete an unintended branch
+        //   console.error(
+        //     "No options were provided to the stateFilter.\nExpected one of 'exactly', 'inBetween', 'andAbove', 'andBelow'"
+        //   );
+        //   process.exit();
+        // }
       }
     }
 
     // todo - remove
-    //process.exit();
+    process.exit();
   }
 
   get debug() {
@@ -256,7 +247,7 @@ class Config {
   }
 
   async #processStateFilter(stateFilter) {
-    if (stateFilter.exactly && stateFilter.exactly.length)
+    if (stateFilter.exactly)
       stateFilter.exactly = await stateDataFromNames(stateFilter.exactly);
     else if (stateFilter.andBelow)
       stateFilter.andBelow = (
@@ -298,9 +289,9 @@ class Config {
   async #processOwnerFilter(ownerFilter) {
     const members = await getMembers();
 
-    if (ownerFilter.any && ownerFilter.any.length) {
+    if (ownerFilter.any) {
       ownerFilter.any = this.#processNameFilterList(ownerFilter.any, members);
-    } else if (ownerFilter.not && ownerFilter.not.length) {
+    } else if (ownerFilter.not) {
       ownerFilter.not = this.#processNameFilterList(ownerFilter.not, members);
     }
   }

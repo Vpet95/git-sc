@@ -93,7 +93,7 @@ async function passesStateFilter(story, stateFilter) {
   if (!stateFilter) return true;
   if (!story) false; // should never happen
 
-  if (stateFilter.exactly && stateFilter.exactly.length) {
+  if (stateFilter.exactly) {
     return (
       stateFilter.exactly.find(
         (elem) => elem.id === story.workflow_state_id
