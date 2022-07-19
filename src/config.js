@@ -31,8 +31,8 @@ const deleteBranchFilterSchema = Joi.object({
     .oxor("exactly", "inBetween", "andAbove", "andBelow")
     .min(1),
   ownerFilter: Joi.object({
-    any: Joi.array().items(Joi.string()).min(1),
-    not: Joi.array().items(Joi.string()).min(1),
+    any: Joi.array().items(Joi.string()).min(1).unique(),
+    not: Joi.array().items(Joi.string()).min(1).unique(),
   })
     .oxor("any", "not")
     .min(1),
@@ -91,7 +91,46 @@ class Config {
   verbose = false;
   opts = structuredClone(DEFAULT_OPTIONS);
 
-  validate() {
+  /**
+   * Possible weird states:
+   * any, containing:
+   *  - "self" and "other" (all-permissive) (this should be an error, user may have accidentally configured this)
+   *  - "<self's name written out>" and "other" (problematic for the same reason above)
+   *  - "other" and <any other non-self name> (not an error, but redundant. Warn about this + ignore other names)
+   * not, containing:
+   *  - "self" and "other" (not-permissive) (definite error, user prevented themself from being able to delete anything)
+   *  -  "<self's name written out>" and "other" (problematic for the same reason above)
+   *  - "other" and <any other non-self name> (not an error, but redundant. Warn about this + ignore other names)
+   *
+   * Other redundant options: "self" and "<self's name>" - I don't know if I'll validate this. At this point the user is triyng to
+   * be annoying.
+   */
+  #validateFilters() {
+    const nErr = FILTERED_COMMANDS.map((commandName) => {
+      const any = this.opts[commandName]?.filters?.ownerFilter?.any;
+
+      if (any) {
+        const nNames = any.filter((name) =>
+          ["other", "self"].includes(name.toLowerCase())
+        ).length;
+
+        // todo
+        if (nNames > 1) {
+          console.error("");
+        }
+      }
+    }).filter((status) => Boolean(status)).length;
+
+    if (nErr) {
+      throw new Error(
+        `${nErr} error${
+          nErr > 1 ? "s" : ""
+        } pertaining to your branch deletion filters`
+      );
+    }
+  }
+
+  #validate() {
     const validationResult = optionsSchema.validate(this.opts, {
       abortEarly: false,
       allowUnknown: true,
@@ -121,6 +160,9 @@ class Config {
       // console.error(`Your settings:\n${JSON.stringify(this.opts, null, 2)}`);
       process.exit();
     }
+
+    // validate some potentially iffy states with delete/clean filters
+    this.#validateFilters();
 
     // todo - remove
     // process.exit();
@@ -213,7 +255,7 @@ class Config {
         console.log(`Attempting to load configuration from ${configFile}`);
 
       this.#storeConfig(configFile);
-      this.validate();
+      this.#validate();
 
       await this.#processFilters(commandName);
 
@@ -236,7 +278,7 @@ class Config {
       console.log(`Attempting to load configuration from ${fileName}`);
 
     this.#storeConfig(fileName);
-    this.validate();
+    this.#validate();
 
     await this.#processFilters(commandName);
 
@@ -244,14 +286,11 @@ class Config {
   }
 
   async #processFilters(commandName) {
-    if (!FILTERED_COMMANDS.includes(commandName)) return;
-
     if (
-      this.opts[commandName] == undefined ||
-      this.opts[commandName].filters == undefined
-    ) {
+      !FILTERED_COMMANDS.includes(commandName) ||
+      !this.opts[commandName]?.filters
+    )
       return;
-    }
 
     setShortcutAPIKey(this.opts.common.shortcutApiKey);
 

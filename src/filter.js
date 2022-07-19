@@ -44,29 +44,27 @@ export class Filter {
     const members = await getMembers();
 
     return await Promise.all(
-      nameList
-        .filter((name, index, list) => list.indexOf(name) === index)
-        .map(async (name) => {
-          // we grab 'self' in both cases here cause other is just !self
-          if (name.toLowerCase() === "self" || name.toLowerCase() === "other") {
-            // this should work for both 'not' and 'any' - when processing the filter, the context
-            // of what list 'self' is in will be enough to determine what to do
-            const self = await getSelf();
-            return self.id;
-          }
+      nameList.map(async (name) => {
+        // we grab 'self' in both cases here cause other is just !self
+        if (name.toLowerCase() === "self" || name.toLowerCase() === "other") {
+          // this should work for both 'not' and 'any' - when processing the filter, the context
+          // of what list 'self' is in will be enough to determine what to do
+          const self = await getSelf();
+          return self.id;
+        }
 
-          const member = members.find(
-            (m) => m.profile.name.toLowerCase() === name.toLowerCase()
+        const member = members.find(
+          (m) => m.profile.name.toLowerCase() === name.toLowerCase()
+        );
+
+        if (member === undefined) {
+          throw new Error(
+            `Error: name '${name}' does not refer to any member of your Shortcut workspace`
           );
+        }
 
-          if (member === undefined) {
-            throw new Error(
-              `Error: name '${name}' does not refer to any member of your Shortcut workspace`
-            );
-          }
-
-          return member.profile.id;
-        })
+        return member.profile.id;
+      })
     );
   }
 
