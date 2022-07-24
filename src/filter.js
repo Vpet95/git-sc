@@ -60,7 +60,7 @@ export class Filter {
           );
         }
 
-        return member.profile.id;
+        return member.id;
       })
     );
   }
@@ -120,11 +120,19 @@ export class Filter {
   }
 
   ownerFilterPasses(story) {
-    // const owf = this.filter.ownerFilter;
-    // if (!owf) return true; // no filter, passes by default
-    // if (!story) return false; // should never happen
-    // const has = story.owner_ids.find((id) => {
-    //   return owf
-    // })
+    const owf = this.filter.ownerFilter;
+    if (!owf) return true; // no filter, passes by default
+    if (!story) return false; // should never happen
+
+    if (owf.any) {
+      // todo - in the future it might be nice to be able to specify
+      // "only if this owner, and no one else"; e.g. allowCoOwnership
+      return story.owner_ids.find((id) => owf.any.includes(id)) !== undefined;
+    } else if (owf.not) {
+      return story.owner_ids.find((id) => owf.not.includes(id)) === undefined;
+    } else {
+      // shouldn't happen
+      throw new Error("No valid owner filter");
+    }
   }
 }

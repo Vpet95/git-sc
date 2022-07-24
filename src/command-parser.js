@@ -55,9 +55,6 @@ class CommandParser {
 
         if (name !== "init")
           await this.config.load(program.opts().config, name);
-
-        this.config.dump();
-        process.exit();
       });
 
     const initCommand = new commander.Command("init")

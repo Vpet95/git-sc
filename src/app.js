@@ -79,13 +79,6 @@ export const createBranch = async (storyId) => {
   }
 };
 
-// async function passesSelfFilter(story) {
-//   if (!mineOnly) return true; // covers undefined and null as well - if it's not set, it's false by default
-
-//   const self = await getSelf();
-//   return story.owner_ids.includes(self.id);
-// }
-
 // first determine if it's even possible to delete the branch given current settings
 // then, prompt
 async function validateDeleteConditionsAndPrompt(branchName, storyId) {
@@ -112,10 +105,11 @@ async function validateDeleteConditionsAndPrompt(branchName, storyId) {
       process.exit();
     });
 
-    const passes = await deleteOpts.filters.stateFilterPasses(story);
-
-    if (!passes) {
-      console.warn(`Branch ${branchName} filtered out by stateFilter`);
+    if (
+      !(await deleteOpts.filters.stateFilterPasses(story)) ||
+      !(await deleteOpts.filters.ownerFilterPasses(story))
+    ) {
+      console.warn(`Branch ${branchName} filtered out by configuration`);
       return false;
     }
   }

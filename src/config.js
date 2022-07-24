@@ -8,7 +8,7 @@ import {
   DEFAULT_OPTIONS,
 } from "./constants.js";
 import { includesAny, wrapLog } from "./utils.js";
-import { getSelf, setShortcutAPIKey } from "./shortcut-client.js";
+import { setShortcutAPIKey } from "./shortcut-client.js";
 import GitClient from "./git-client.js";
 import { Filter } from "./filter.js";
 
