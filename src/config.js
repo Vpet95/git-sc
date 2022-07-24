@@ -7,8 +7,8 @@ import {
   DEFAULT_CONFIG_LOCATIONS,
   DEFAULT_OPTIONS,
 } from "./constants.js";
-import { includesAny } from "./utils.js";
-import { setShortcutAPIKey } from "./shortcut-client.js";
+import { includesAny, wrapLog } from "./utils.js";
+import { getSelf, setShortcutAPIKey } from "./shortcut-client.js";
 import GitClient from "./git-client.js";
 import { Filter } from "./filter.js";
 
@@ -91,46 +91,79 @@ class Config {
   verbose = false;
   opts = structuredClone(DEFAULT_OPTIONS);
 
-  /**
-   * Possible weird states:
-   * any, containing:
-   *  - "self" and "other" (all-permissive) (this should be an error, user may have accidentally configured this)
-   *  - "<self's name written out>" and "other" (problematic for the same reason above)
-   *  - "other" and <any other non-self name> (not an error, but redundant. Warn about this + ignore other names)
-   * not, containing:
-   *  - "self" and "other" (not-permissive) (definite error, user prevented themself from being able to delete anything)
-   *  -  "<self's name written out>" and "other" (problematic for the same reason above)
-   *  - "other" and <any other non-self name> (not an error, but redundant. Warn about this + ignore other names)
-   *
-   * Other redundant options: "self" and "<self's name>" - I don't know if I'll validate this. At this point the user is triyng to
-   * be annoying.
-   */
-  #validateFilters() {
-    const nErr = FILTERED_COMMANDS.map((commandName) => {
-      const any = this.opts[commandName]?.filters?.ownerFilter?.any;
+  async #validateOwnerFilter(userFilter, filterName) {
+    let hasSelf = false;
+    let hasSelfName = false;
+    let hasOther = false;
+    let hasAnythingElse = false;
+    let err = false;
 
-      if (any) {
-        const nNames = any.filter((name) =>
-          ["other", "self"].includes(name.toLowerCase())
-        ).length;
+    setShortcutAPIKey(this.opts.common.shortcutApiKey);
 
-        // todo
-        if (nNames > 1) {
-          console.error("");
-        }
-      }
-    }).filter((status) => Boolean(status)).length;
+    // this is fine, the API call is cached
+    const self = await getSelf();
+    const selfName = self.name.toLowerCase();
 
-    if (nErr) {
-      throw new Error(
-        `${nErr} error${
-          nErr > 1 ? "s" : ""
-        } pertaining to your branch deletion filters`
+    userFilter.forEach((name) => {
+      const lower = name.toLowerCase();
+
+      if (lower === "self") hasSelf = true;
+      else if (lower === "other") hasOther = true;
+      else if (lower === selfName) hasSelfName = true;
+      else hasAnythingElse = true;
+    });
+
+    if (hasOther && (hasSelf || hasSelfName)) {
+      wrapLog(
+        `'${filterName}' ownerFilter contains an ambiguous, \
+all-${filterName === "any" ? "inclusive" : "exclusive"} state. \
+It contains keyword 'other' and either keyword 'self' or the \
+name of the currently authenticated user.`,
+        "error"
+      );
+      err = true;
+    }
+
+    if (hasSelf && hasSelfName) {
+      wrapLog(
+        `'${filterName}' ownerFilter contains redundant values 'self' and the name \
+of the currently authenticated user (${self.name}). This would result in potentially \
+redundant API calls.`,
+        "warn"
       );
     }
+
+    if (hasOther && hasAnythingElse) {
+      wrapLog(
+        `'${filterName}' ownerFilter contains redundant values 'other' and the name of \
+another Shortcut workspace member. This would result in potentially \
+redundant API calls.`,
+        "warn"
+      );
+    }
+
+    return err;
   }
 
-  #validate() {
+  async #validateFilters() {
+    const results = await Promise.all(
+      FILTERED_COMMANDS.map(async (commandName) => {
+        let err = false;
+
+        const any = this.opts[commandName]?.filters?.ownerFilter?.any;
+        if (any) err = await this.#validateOwnerFilter(any, "any");
+
+        const not = this.opts[commandName]?.filters?.ownerFilter?.not;
+        if (not) err = (await this.#validateOwnerFilter(not, "not")) || err;
+
+        return err;
+      })
+    );
+
+    if (results.filter((status) => Boolean(status)).length) process.exit();
+  }
+
+  async #validate() {
     const validationResult = optionsSchema.validate(this.opts, {
       abortEarly: false,
       allowUnknown: true,
@@ -149,8 +182,9 @@ class Config {
             "branchRemote"
           )
         ) {
-          console.error(
-            `"${errorDetail?.context?.label}" must be a valid git ref - see: https://stackoverflow.com/a/3651867/3578493`
+          wrapLog(
+            `"${errorDetail?.context?.label}" must be a valid git ref - see: https://stackoverflow.com/a/3651867/3578493`,
+            "error"
           );
         } else {
           console.error(errorDetail?.message);
@@ -162,7 +196,7 @@ class Config {
     }
 
     // validate some potentially iffy states with delete/clean filters
-    this.#validateFilters();
+    await this.#validateFilters();
 
     // todo - remove
     // process.exit();
@@ -255,7 +289,7 @@ class Config {
         console.log(`Attempting to load configuration from ${configFile}`);
 
       this.#storeConfig(configFile);
-      this.#validate();
+      await this.#validate();
 
       await this.#processFilters(commandName);
 
@@ -278,7 +312,7 @@ class Config {
       console.log(`Attempting to load configuration from ${fileName}`);
 
     this.#storeConfig(fileName);
-    this.#validate();
+    await this.#validate();
 
     await this.#processFilters(commandName);
 

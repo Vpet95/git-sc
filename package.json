@@ -23,6 +23,7 @@
   "preferGlobal": true,
   "type": "module",
   "devDependencies": {
+    "jest": "^28.1.3",
     "wordwrapjs": "^5.1.0"
   }
 }
