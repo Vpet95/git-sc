@@ -91,79 +91,7 @@ class Config {
   verbose = false;
   opts = structuredClone(DEFAULT_OPTIONS);
 
-  async #validateOwnerFilter(userFilter, filterName) {
-    let hasSelf = false;
-    let hasSelfName = false;
-    let hasOther = false;
-    let hasAnythingElse = false;
-    let err = false;
-
-    setShortcutAPIKey(this.opts.common.shortcutApiKey);
-
-    // this is fine, the API call is cached
-    const self = await getSelf();
-    const selfName = self.name.toLowerCase();
-
-    userFilter.forEach((name) => {
-      const lower = name.toLowerCase();
-
-      if (lower === "self") hasSelf = true;
-      else if (lower === "other") hasOther = true;
-      else if (lower === selfName) hasSelfName = true;
-      else hasAnythingElse = true;
-    });
-
-    if (hasOther && (hasSelf || hasSelfName)) {
-      wrapLog(
-        `'${filterName}' ownerFilter contains an ambiguous, \
-all-${filterName === "any" ? "inclusive" : "exclusive"} state. \
-It contains keyword 'other' and either keyword 'self' or the \
-name of the currently authenticated user.`,
-        "error"
-      );
-      err = true;
-    }
-
-    if (hasSelf && hasSelfName) {
-      wrapLog(
-        `'${filterName}' ownerFilter contains redundant values 'self' and the name \
-of the currently authenticated user (${self.name}). This would result in potentially \
-redundant API calls.`,
-        "warn"
-      );
-    }
-
-    if (hasOther && hasAnythingElse) {
-      wrapLog(
-        `'${filterName}' ownerFilter contains redundant values 'other' and the name of \
-another Shortcut workspace member. This would result in potentially \
-redundant API calls.`,
-        "warn"
-      );
-    }
-
-    return err;
-  }
-
-  async #validateFilters() {
-    const results = await Promise.all(
-      FILTERED_COMMANDS.map(async (commandName) => {
-        let err = false;
-
-        const any = this.opts[commandName]?.filters?.ownerFilter?.any;
-        if (any) err = await this.#validateOwnerFilter(any, "any");
-
-        const not = this.opts[commandName]?.filters?.ownerFilter?.not;
-        if (not) err = (await this.#validateOwnerFilter(not, "not")) || err;
-
-        return err;
-      })
-    );
-
-    if (results.filter((status) => Boolean(status)).length) process.exit();
-  }
-
-  async #validate() {
+  #validate() {
     const validationResult = optionsSchema.validate(this.opts, {
       abortEarly: false,
       allowUnknown: true,
@@ -194,9 +122,6 @@ redundant API calls.`,
       // console.error(`Your settings:\n${JSON.stringify(this.opts, null, 2)}`);
       process.exit();
     }
-
-    // validate some potentially iffy states with delete/clean filters
-    await this.#validateFilters();
 
     // todo - remove
     // process.exit();
@@ -289,7 +214,7 @@ redundant API calls.`,
         console.log(`Attempting to load configuration from ${configFile}`);
 
       this.#storeConfig(configFile);
-      await this.#validate();
+      this.#validate();
 
       await this.#processFilters(commandName);
 
@@ -312,7 +237,7 @@ redundant API calls.`,
       console.log(`Attempting to load configuration from ${fileName}`);
 
     this.#storeConfig(fileName);
-    await this.#validate();
+    this.#validate();
 
     await this.#processFilters(commandName);
 

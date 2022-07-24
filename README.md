@@ -159,7 +159,6 @@ The `ownerFilter` above allows you to narrow down the list of potential branches
 Acceptable values for the owner filter options include:
 
 - `"self"` - representing the currently authenticated user (via the Shortcut API key), a shorthand for referring to self without writing out your full name
-- `"other"` - representing `!self`
 - `<Shortcut user name>` - the name of any user in your Shortcut workspace - make sure it's written as it appears in the owner field of ticket items.
 
 You use the `ownerFilter` in conjunction with the `stateFilter` to narrow down the deletable branch list further. For instance:

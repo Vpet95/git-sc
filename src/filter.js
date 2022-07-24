@@ -45,10 +45,7 @@ export class Filter {
 
     return await Promise.all(
       nameList.map(async (name) => {
-        // we grab 'self' in both cases here cause other is just !self
-        if (name.toLowerCase() === "self" || name.toLowerCase() === "other") {
-          // this should work for both 'not' and 'any' - when processing the filter, the context
-          // of what list 'self' is in will be enough to determine what to do
+        if (name.toLowerCase() === "self") {
           const self = await getSelf();
           return self.id;
         }
@@ -120,5 +117,14 @@ export class Filter {
 
     // we should never get here - config validates for state filters missing checks
     return false;
+  }
+
+  ownerFilterPasses(story) {
+    // const owf = this.filter.ownerFilter;
+    // if (!owf) return true; // no filter, passes by default
+    // if (!story) return false; // should never happen
+    // const has = story.owner_ids.find((id) => {
+    //   return owf
+    // })
   }
 }
