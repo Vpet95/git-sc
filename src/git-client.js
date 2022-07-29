@@ -55,6 +55,12 @@ export default class GitClient {
     );
   }
 
+  checkoutLast() {
+    return this.do({
+      command: `git checkout -`,
+    });
+  }
+
   getCurrentBranchName(errorHandler) {
     return this.do(
       { command: "git branch --show-current" },
@@ -68,9 +74,12 @@ export default class GitClient {
       errorHandler
     ).output.trim();
 
-    const start = output.indexOf("...") + 3;
+    const result = { remoteBranchName: undefined, remoteName: undefined };
 
-    if (start === -1) return undefined;
+    const ellipsesIndex = output.indexOf("...");
+    if (ellipsesIndex === -1) return result;
+
+    const start = ellipsesIndex + 3;
 
     let end = output.indexOf("\n", start);
 
@@ -79,10 +88,14 @@ export default class GitClient {
 
     const parsed = output.substring(start, end);
 
-    return {
-      branch: parsed.substring(parsed.indexOf("/") + 1, parsed.length),
-      remote: parsed.substring(0, parsed.indexOf("/")),
-    };
+    result.remoteBranchName = parsed.substring(
+      parsed.indexOf("/") + 1,
+      parsed.length
+    );
+
+    result.remote = parsed.substring(0, parsed.indexOf("/"));
+
+    return result;
   }
 
   pull({ remoteName, branchName }, errorHandler) {
@@ -164,3 +177,18 @@ export default class GitClient {
     return true;
   }
 }
+
+let gitClient = null;
+
+export const initializeGitClient = (dir, debug) => {
+  gitClient = new GitClient({
+    dir,
+    debug,
+  });
+};
+
+export const getGitClient = () => {
+  if (gitClient === null) throw new Error("git client not initialized"); // should never happen
+
+  return gitClient;
+};

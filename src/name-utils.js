@@ -1,4 +1,3 @@
-import { getKeywords } from "./twinword-client.js";
 import { getConfig } from "./config.js";
 
 // some useful part-of-speech info: https://english.stackexchange.com/questions/328961/what-type-of-words-are-the-a-of-etc-grouped-as
@@ -81,16 +80,6 @@ export const filterAndTransform = (name, limit) => {
   return newName.length ? newName : name;
 };
 
-export const convertToKeywords = (name, limit, cb) => {
-  getKeywords(name, (data) => {
-    const newName = Object.keys(data.keyword)
-      .slice(0, limit ? limit : Number.POSITIVE_INFINITY)
-      .join("-");
-
-    cb(newName);
-  });
-};
-
 export const generateName = (storyId, storyName) => {
   const createOpts = getConfig().createOptions;
 
@@ -98,16 +87,4 @@ export const generateName = (storyId, storyName) => {
     storyName,
     createOpts.branchKeywordCountLimit
   )}`;
-};
-
-export const generateFromKeywords = (storyId, storyName, cb) => {
-  const createOpts = getConfig().createOptions;
-
-  convertToKeywords(
-    storyName,
-    createOpts.branchKeywordCountLimit,
-    (keywordName) => {
-      cb(`${createOpts.branchPrefix}${storyId}/${keywordName}`);
-    }
-  );
 };

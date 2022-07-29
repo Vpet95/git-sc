@@ -3,9 +3,11 @@ import * as commander from "commander";
 
 import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
 import { getConfig } from "./config.js";
+import { initializeGitClient, getGitClient } from "./git-client.js";
 import {
   initApp,
   createBranch,
+  storyIdToBranchName,
   deleteBranch,
   cleanBranches,
   openStory,
@@ -53,8 +55,14 @@ class CommandParser {
 
         const name = actionCommand.name();
 
-        if (name !== "init")
+        if (name !== "init") {
           await this.config.load(program.opts().config, name);
+
+          initializeGitClient(
+            this.config.commonOptions.localGitDirectory,
+            this.config.debug
+          );
+        }
       });
 
     const initCommand = new commander.Command("init")
@@ -100,7 +108,9 @@ class CommandParser {
         "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
       )
       .action((storyId, options, __) => {
-        deleteBranch(storyId, options.remote, options.force);
+        const branchName = storyIdToBranchName(storyId);
+
+        deleteBranch(branchName, storyId, options.remote, options.force);
       });
 
     const cleanCommand = new commander.Command("clean");

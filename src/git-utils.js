@@ -1,12 +1,9 @@
-import GitClient from "./git-client.js";
+import { getGitClient } from "./git-client.js";
 import { getConfig } from "./config.js";
 
 export const createNewBranch = (newBranchName, errorHandler) => {
   const config = getConfig();
-  const git = new GitClient({
-    dir: config.commonOptions.localGitDirectory,
-    debug: config.commonOptions.debug,
-  });
+  const git = getGitClient();
 
   git.checkout(
     { branchName: config.commonOptions.primaryBranch },
@@ -82,11 +79,7 @@ export const findBranchesByStoryId = (storyId, errorOnMultiple = false) => {
       `argument 'storyId' must be of type 'number'; was type '${typeof storyId}'`
     );
 
-  const config = getConfig();
-  const git = new GitClient({
-    dir: config.commonOptions.localGitDirectory,
-    debug: config.debug,
-  });
+  const git = getGitClient();
 
   const branches = git
     .listBranches()
@@ -96,4 +89,16 @@ export const findBranchesByStoryId = (storyId, errorOnMultiple = false) => {
     throw new Error(`Multiple branches containing story id [${storyId}] found`);
 
   return branches;
+};
+
+// a hack to get the remote name and branch name of any local branch
+// unfortunately there's no built-in git command to do this easily
+export const getRemoteOf = (branchName) => {
+  const git = getGitClient();
+
+  git.checkout({ branchName });
+  const remoteInfo = git.getCurrentRemoteName();
+  git.checkoutLast();
+
+  return remoteInfo;
 };

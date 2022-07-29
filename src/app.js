@@ -6,18 +6,17 @@
 import { existsSync, writeFileSync } from "fs";
 import open from "open";
 import { getConfig } from "./config.js";
-import GitClient from "./git-client.js";
-import { createNewBranch, findBranchesByStoryId } from "./git-utils.js";
-import { generateFromKeywords, generateName } from "./name-utils.js";
+import { getGitClient } from "./git-client.js";
 import {
-  getStory,
-  getState,
-  getMember,
-  setShortcutAPIKey,
-} from "./shortcut-client.js";
-import { twinwordConfig, twinwordConfigured } from "./twinword-client.js";
+  createNewBranch,
+  findBranchesByStoryId,
+  getRemoteOf,
+} from "./git-utils.js";
+import { generateName } from "./name-utils.js";
+import { getStory, getState, getMember } from "./shortcut-client.js";
 import { assertSuccess, selectionPrompt } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
+import { extractStoryIdFromBranchName } from "./utils.js";
 
 import promptSync from "prompt-sync";
 const prompt = promptSync();
@@ -59,43 +58,48 @@ export const createBranch = async (storyId) => {
 
   storyId = Number.parseInt(storyId, 10);
 
-  const config = getConfig();
-
-  /* Configure the libraries */
-  setShortcutAPIKey(config.commonOptions.shortcutApiKey);
-  twinwordConfig(
-    config.createOptions.rapidApiHost,
-    config.createOptions.topicTaggingApiKey
-  );
-
   const story = await getStory(storyId);
 
-  if (twinwordConfigured()) {
-    generateFromKeywords(storyId, story.name, (branchName) => {
-      createNewBranch(branchName, assertSuccess);
-    });
-  } else {
-    createNewBranch(generateName(storyId, story.name), assertSuccess);
-  }
+  createNewBranch(generateName(storyId, story.name), assertSuccess);
 };
 
 // first determine if it's even possible to delete the branch given current settings
 // then, prompt
-async function validateDeleteConditionsAndPrompt(branchName, storyId) {
+async function validateDeleteConditionsAndPrompt(
+  branchName,
+  storyId,
+  currentBranchName,
+  force
+) {
   let story = null;
   let promptDescription = "";
 
+  const git = getGitClient();
   const deleteOpts = getConfig().deleteOptions;
+
+  // deleting the current branch - make sure no uncommitted changes exist
+  if (storyId === undefined || branchName === currentBranchName) {
+    if (git.status().includes("Changes not staged for commit")) {
+      console.error(
+        "Uncomitted changes detected - reset, commit, or stash changes; then try again."
+      );
+      process.exit();
+    }
+  }
+
+  // no further validation / filtering necessary
+  if (force) return true;
+
+  if (UNDELETABLE_BRANCHES.includes(branchName)) {
+    console.error(
+      `Cannot delete branch '${branchName}' - use --force to override`
+    );
+    return false;
+  }
 
   // we're deleting the current branch, see if we can parse out a story id
   if (storyId === undefined) {
-    // this is very much less than ideal. I don't currently know what the mix/max Shortcut story ids are;
-    // but I want to avoid the possibility of snagging just any number from a branch name; so we're making
-    // an educated guess here that if there are at least 3 digits in a row, it's most likely an id
-    // Not sure how often people have misc. numbers in their git branch names
-    const idPattern = /\d{3,}/;
-    storyId = branchName.match(idPattern);
-
+    storyId = extractStoryIdFromBranchName(branchName);
     storyId = storyId === null ? undefined : parseInt(storyId, 10);
   }
 
@@ -140,17 +144,9 @@ async function validateDeleteConditionsAndPrompt(branchName, storyId) {
   return true;
 }
 
-export const deleteBranch = async (storyId, remote = false, force = false) => {
-  const config = getConfig();
-  const shouldDeleteRemote = config.deleteOptions.remote || remote;
-  const shouldForce = config.deleteOptions.force || force;
-
-  const git = new GitClient({
-    dir: config.commonOptions.localGitDirectory,
-    debug: config.debug,
-  });
-
-  setShortcutAPIKey(config.commonOptions.shortcutApiKey);
+// does the legwork of finding the specific branch name to delete
+export const storyIdToBranchName = (storyId) => {
+  const git = getGitClient();
 
   let branchName =
     storyId === undefined
@@ -159,7 +155,7 @@ export const deleteBranch = async (storyId, remote = false, force = false) => {
 
   if (branchName === undefined) {
     console.error("Error: could not find current branch name");
-    return;
+    process.exit();
   } else if (Array.isArray(branchName)) {
     if (branchName.length > 1) {
       console.log(
@@ -169,52 +165,38 @@ export const deleteBranch = async (storyId, remote = false, force = false) => {
 
       if (!branchName) {
         console.log("Ok, canceled");
-        return;
+        process.exit();
       }
     }
   }
 
-  if (UNDELETABLE_BRANCHES.includes(branchName) && !shouldForce) {
-    console.warn(
-      `Cannot delete branch '${branchName}' - use --force to override`
-    );
-    return;
-  }
+  return branchName;
+};
 
-  if (git.status().includes("Changes not staged for commit")) {
-    if (shouldForce) {
-      console.warn(
-        "Uncomitted changes detected in branch. Resetting due to --force flag."
-      );
-      git.reset(true, assertSuccess);
-    } else {
-      console.error(
-        "Uncomitted changes detected in branch - reset, commit, or stash changes; then try again."
-      );
-      return;
-    }
-  }
+export const deleteBranch = async (branchName, storyId, remote, force) => {
+  const config = getConfig();
+  const git = getGitClient();
+  const shouldDeleteRemote = config.deleteOptions.remote || remote;
+  const shouldForce = config.deleteOptions.force || force;
+  const currentBranchName = git.getCurrentBranchName();
 
-  if (!shouldForce) {
-    const shouldContinue = await validateDeleteConditionsAndPrompt(
+  if (
+    !(await validateDeleteConditionsAndPrompt(
       branchName,
-      storyId
-    );
+      storyId,
+      currentBranchName,
+      shouldForce
+    ))
+  )
+    return;
 
-    if (!shouldContinue) return;
-  }
+  const { remoteBranchName, remoteName } = shouldDeleteRemote
+    ? getRemoteOf(branchName)
+    : { remoteBranchName: undefined, remoteName: undefined };
 
-  let remoteName = "";
-  let remoteBranchName = "";
-  if (shouldDeleteRemote) {
-    git.checkout({ branchName: branchName });
-
-    const remoteInfo = git.getCurrentRemoteName();
-
-    if (remoteInfo) {
-      remoteBranchName = remoteInfo.branch;
-      remoteName = remoteInfo.remote;
-    }
+  if (branchName === currentBranchName) {
+    console.log(`Checking out ${config.commonOptions.primaryBranch}...`);
+    git.checkout({ branchName: config.commonOptions.primaryBranch });
   }
 
   console.log(
@@ -225,7 +207,6 @@ export const deleteBranch = async (storyId, remote = false, force = false) => {
     }`
   );
 
-  git.checkout({ branchName: config.commonOptions.primaryBranch });
   git.delete(
     {
       branchName,

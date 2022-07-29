@@ -8,9 +8,9 @@ import {
   DEFAULT_OPTIONS,
 } from "./constants.js";
 import { includesAny, wrapLog } from "./utils.js";
-import { setShortcutAPIKey } from "./shortcut-client.js";
 import GitClient from "./git-client.js";
 import { Filter } from "./filter.js";
+import { setShortcutAPIKey } from "./shortcut-client.js";
 
 const refValidator = (value, helpers) => {
   if (GitClient.isValidRefName(value)) return value;
@@ -63,8 +63,6 @@ const optionsSchema = Joi.object({
   }).required(),
   create: Joi.object({
     pullLatest: Joi.boolean(),
-    topicTaggingApiKey: Joi.string().min(1), // basically, non-empty
-    rapidApiHost: Joi.string().pattern(/^.*\.rapidapi.com$/),
     branchPrefix: Joi.string(),
     branchKeywordCountLimit: Joi.number().integer().min(0),
     branchRemote: Joi.string().custom(refValidator),
@@ -168,10 +166,6 @@ class Config {
   describe() {
     const defaults = structuredClone(DEFAULT_OPTIONS);
 
-    defaults.create.topicTaggingApiKey =
-      "<optional; your Twinword API key here - to obtain one go to https://rapidapi.com/twinword/api/topic-tagging/>";
-    defaults.create.rapidApiHost =
-      "<optional; your RapidAPI host here - to obtain one go to https://rapidapi.com/twinword/api/topic-tagging/>";
     defaults.common.shortcutApiKey =
       "<required; your Shortcut API key - see https://help.shortcut.com/hc/en-us/articles/205701199-Shortcut-API-Tokens for more info>";
 
@@ -199,6 +193,8 @@ class Config {
       unusedKeys.forEach((key) => {
         delete this.opts[key];
       });
+
+      setShortcutAPIKey(this.opts.common.shortcutApiKey);
     } catch (e) {
       console.error(`Could not process or store configuration.\n${e.message}`);
       process.exit();
@@ -252,8 +248,6 @@ class Config {
       !this.opts[commandName]?.filters
     )
       return;
-
-    setShortcutAPIKey(this.opts.common.shortcutApiKey);
 
     this.opts[commandName].filters = new Filter(this.opts[commandName].filters);
     await this.opts[commandName].filters.unpack();

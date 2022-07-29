@@ -18,8 +18,6 @@ Alternatively, you can run git-sc directly via [npx](https://www.npmjs.com/packa
 
 git-sc requires a Shortcut API token to run - please read [the official help article](https://help.shortcut.com/hc/en-us/articles/205701199-Shortcut-API-Tokens) on generating your own Shortcut API token for more info.
 
-Optionally, you may acquire a [Twinworld topic tagging](https://rapidapi.com/twinword/api/topic-tagging/) API token as well as a RapidAPI host name. At the time of this writing the free tier of the API will allow for 10k calls per month, which is more than sufficient for git-sc. The tool will still work without topic tagging, but may produce less sophisticated branch names using a simpler algorithm.
-
 ## Usage
 
 Call git-sc with `--help` to see full usage:
@@ -201,14 +199,6 @@ git-sc requires a JSON configuration file to run properly. It will look for it i
 - The home directory (`~`)
 
 If no configuration file is found, git-sc will quit.
-
-#### Environment Variables
-
-git-sc supports the following environment variables:
-
-- `SC_KEY`: specifies the Shortcut API key
-- `TWINWORD_TOKEN`: specifies the Twinword topic tagging API key
-- `RAPID_HOST`: specifies the RapidAPI host URL
 
 ## Roadmap
 
