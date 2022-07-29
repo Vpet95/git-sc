@@ -23,7 +23,7 @@ export const setShortcutAPIKey = (key) => {
 };
 
 const get = (
-  { baseURL, resource = null, params = [] },
+  { baseURL, resource = null, params = [], allowConcurrent = false },
   expectedStatusCode = 200
 ) => {
   // assemble and validate a full url; final possible output looks like: https://www.somesite.com/1234?param1="abc"&param2="def"
@@ -31,7 +31,7 @@ const get = (
   if (!isValidURL(fullURL)) throw new Error(`[${fullURL}] is not a valid URL`);
 
   requestCount++;
-  if (requestCount > 1)
+  if (requestCount > 1 && !allowConcurrent)
     throw new Error(
       "Yikes! Attempted multiple concurrent requests - git-sc must be missing an 'await' call somewhere"
     );
@@ -103,10 +103,11 @@ const getCached = async ({ cacheKey, ...opts }, expectedStatusCode) => {
   return result;
 };
 
-export const getStory = (ticketId) => {
+export const getStory = (ticketId, allowConcurrent = false) => {
   return get({
     baseURL: "https://api.app.shortcut.com/api/v3/stories",
     resource: `${ticketId}`,
+    allowConcurrent,
   });
 };
 

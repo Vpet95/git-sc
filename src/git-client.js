@@ -142,7 +142,8 @@ export default class GitClient {
 
         // clean up the current branch name
         return name[0] === "*" ? name.substring(2, name.length) : name;
-      });
+      })
+      .filter((name) => name.length > 0);
   }
 
   status() {

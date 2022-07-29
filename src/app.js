@@ -69,13 +69,14 @@ async function validateDeleteConditionsAndPrompt(
   branchName,
   storyId,
   currentBranchName,
-  force
+  force,
+  options
 ) {
   let story = null;
   let promptDescription = "";
 
   const git = getGitClient();
-  const deleteOpts = getConfig().deleteOptions;
+  const config = getConfig();
 
   // deleting the current branch - make sure no uncommitted changes exist
   if (storyId === undefined || branchName === currentBranchName) {
@@ -97,22 +98,23 @@ async function validateDeleteConditionsAndPrompt(
     return false;
   }
 
-  // we're deleting the current branch, see if we can parse out a story id
+  // we're deleting the current branch (or running clean), see if we can parse out a story id
   if (storyId === undefined) {
     storyId = extractStoryIdFromBranchName(branchName);
     storyId = storyId === null ? undefined : parseInt(storyId, 10);
   }
 
   if (storyId !== undefined) {
-    story = await getStory(parseInt(storyId, 10)).catch((e) => {
-      console.error(e);
-      process.exit();
-    });
+    story = await getStory(
+      parseInt(storyId, 10),
+      config.currentCommand === "clean" // clean will most likely be calling getStory on a bunch of different stories at once
+    );
 
     if (
-      !(await deleteOpts.filters.stateFilterPasses(story)) ||
-      !(await deleteOpts.filters.ownerFilterPasses(story))
+      !(await options.filters.stateFilterPasses(story)) ||
+      !(await options.filters.ownerFilterPasses(story))
     ) {
+      // todo - maybe specify what
       console.warn(`Branch ${branchName} filtered out by configuration`);
       return false;
     }
@@ -130,11 +132,13 @@ async function validateDeleteConditionsAndPrompt(
     }
   }
 
-  const resp = prompt(
-    `Delete branch '${branchName}'${
-      promptDescription.length ? `\n${promptDescription}` : " "
-    }y/[n]? `
-  );
+  const resp = options.prompt
+    ? prompt(
+        `Delete branch '${branchName}'${
+          promptDescription.length ? `\n${promptDescription}` : " "
+        }y/[n]? `
+      )
+    : "y";
 
   if (resp.length === 0 || resp.toLowerCase() === "n") {
     console.log("Ok, canceled");
@@ -173,22 +177,30 @@ export const storyIdToBranchName = (storyId) => {
   return branchName;
 };
 
-export const deleteBranch = async (branchName, storyId, remote, force) => {
+export const deleteBranch = async (
+  branchName,
+  storyId,
+  remote,
+  force,
+  overrideOptions
+) => {
   const config = getConfig();
   const git = getGitClient();
-  const shouldDeleteRemote = config.deleteOptions.remote || remote;
-  const shouldForce = config.deleteOptions.force || force;
+  const options = overrideOptions || config.deleteOptions;
+  const shouldDeleteRemote = remote || options.remote;
+  const shouldForce = force || options.force;
+
   const currentBranchName = git.getCurrentBranchName();
 
-  if (
-    !(await validateDeleteConditionsAndPrompt(
-      branchName,
-      storyId,
-      currentBranchName,
-      shouldForce
-    ))
-  )
-    return;
+  const shouldContinue = await validateDeleteConditionsAndPrompt(
+    branchName,
+    storyId,
+    currentBranchName,
+    shouldForce,
+    options
+  );
+
+  if (!shouldContinue) return false;
 
   const { remoteBranchName, remoteName } = shouldDeleteRemote
     ? getRemoteOf(branchName)
@@ -215,11 +227,39 @@ export const deleteBranch = async (branchName, storyId, remote, force) => {
     },
     assertSuccess
   );
+
+  return true;
 };
 
-// todo
-export const cleanBranches = (remote, force) => {
+export const cleanBranches = async (remote, force) => {
   const config = getConfig();
+  const git = getGitClient();
+
+  // our safe haven - can't delete this one
+  const primaryBranch = config.commonOptions.primaryBranch;
+
+  // todo - maybe move these types of logs into the git commands themsleves?
+  console.log(`Checking out ${primaryBranch}...`);
+  git.checkout({ branchName: primaryBranch });
+
+  const branches = git
+    .listBranches()
+    .filter((name) => name.toLowerCase() !== primaryBranch.toLowerCase());
+
+  const results = await Promise.all(
+    branches.map(async (branch) => {
+      return deleteBranch(
+        branch,
+        undefined,
+        remote,
+        force,
+        config.cleanOptions
+      );
+    })
+  );
+
+  const deleteCount = results.filter((result) => Boolean(result)).length;
+  console.log(`Deleted (${deleteCount}/${branches.length}) branches`);
 };
 
 export const openStory = (storyId, workspace = undefined) => {
@@ -231,7 +271,7 @@ export const openStory = (storyId, workspace = undefined) => {
   }
 
   const config = getConfig();
-  const workspaceName = workspace || config.openOptions.shortcutWorkspace;
+  const workspaceName = workspace || config.commonOptions.shortcutWorkspace;
 
   if (!workspaceName) {
     console.error(

@@ -42,6 +42,11 @@ const purgeSchema = Joi.object({
   force: Joi.boolean(),
   remote: Joi.boolean(),
   filters: deleteBranchFilterSchema,
+  onTicketNotFound: Joi.string()
+    .valid("abort", "delete", "skip")
+    .insensitive()
+    .required(),
+  prompt: Joi.boolean(),
 });
 
 // we're allowing unknown fields because they shouldn't disrupt our logic
@@ -60,6 +65,7 @@ const optionsSchema = Joi.object({
     primaryBranchRemote: Joi.string()
       .custom(refValidator, "must exist and be a valid git ref")
       .required(),
+    shortcutWorkspace: Joi.string().allow(""),
   }).required(),
   create: Joi.object({
     pullLatest: Joi.boolean(),
@@ -74,21 +80,16 @@ const optionsSchema = Joi.object({
   delete: purgeSchema,
   clean: purgeSchema.concat(
     Joi.object({
-      onTicketNotFound: Joi.string()
-        .valid("delete", "error", "skip")
-        .insensitive()
-        .required(),
+      onError: Joi.string().valid("stop, continue").insensitive(),
     })
   ),
-  open: Joi.object({
-    shortcutWorkspace: Joi.string().allow(""),
-  }),
 });
 
 class Config {
   configured = false;
   debug = false;
   verbose = false;
+  currentCommand = "";
   opts = structuredClone(DEFAULT_OPTIONS);
 
   #validate() {
@@ -159,6 +160,10 @@ class Config {
     return this.opts.open;
   }
 
+  get cleanOptions() {
+    return this.opts.clean;
+  }
+
   all() {
     return this.opts;
   }
@@ -201,7 +206,7 @@ class Config {
     }
   }
 
-  async load(configFile, commandName = "") {
+  async load(configFile) {
     if (this.configured) return;
 
     if (configFile) {
@@ -214,7 +219,7 @@ class Config {
       this.#storeConfig(configFile);
       this.#validate();
 
-      await this.#processFilters(commandName);
+      await this.#processFilters();
 
       this.configured = true;
       return;
@@ -237,20 +242,22 @@ class Config {
     this.#storeConfig(fileName);
     this.#validate();
 
-    await this.#processFilters(commandName);
+    await this.#processFilters();
 
     this.configured = true;
   }
 
-  async #processFilters(commandName) {
+  async #processFilters() {
     if (
-      !FILTERED_COMMANDS.includes(commandName) ||
-      !this.opts[commandName]?.filters
+      !FILTERED_COMMANDS.includes(this.currentCommand) ||
+      !this.opts[this.currentCommand]?.filters
     )
       return;
 
-    this.opts[commandName].filters = new Filter(this.opts[commandName].filters);
-    await this.opts[commandName].filters.unpack();
+    this.opts[this.currentCommand].filters = new Filter(
+      this.opts[this.currentCommand].filters
+    );
+    await this.opts[this.currentCommand].filters.unpack();
   }
 
   toString(pretty = true) {

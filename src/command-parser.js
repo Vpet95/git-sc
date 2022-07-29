@@ -54,9 +54,10 @@ class CommandParser {
           this.config.setVerbose(program.opts().debug);
 
         const name = actionCommand.name();
+        this.config.currentCommand = name;
 
         if (name !== "init") {
-          await this.config.load(program.opts().config, name);
+          await this.config.load(program.opts().config);
 
           initializeGitClient(
             this.config.commonOptions.localGitDirectory,

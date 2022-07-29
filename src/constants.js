@@ -25,6 +25,7 @@ export const DEFAULT_OPTIONS = {
     localGitDirectory: process.cwd(),
     primaryBranch: "develop",
     primaryBranchRemote: "origin",
+    shortcutWorkspace: "",
   },
   create: {
     pullLatest: true,
@@ -39,16 +40,16 @@ export const DEFAULT_OPTIONS = {
   delete: {
     force: false,
     remote: false,
+    onTicketNotFound: "abort",
     filters: structuredClone(branchDeletionFilters),
+    prompt: true,
   },
   clean: {
     force: false,
     remote: false,
-    onTicketNotFound: "",
+    onTicketNotFound: "skip",
     filters: structuredClone(branchDeletionFilters),
-  },
-  open: {
-    shortcutWorkspace: "",
+    prompt: true,
   },
 };
 

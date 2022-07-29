@@ -182,7 +182,7 @@ Use the `open` command to open a Shortcut ticket in your default browser from th
 git-sc open <story-id>
 ```
 
-This command requires knowledge of your Shortcut workspace name. You can specify it either with the `-w` or `--workspace` option, or through the configuration file via the `shortcutWorkspace` field. e.g.
+This command requires knowledge of your Shortcut workspace name. You can specify it either with the `-w` or `--workspace` option, or through the configuration file via the `shortcutWorkspace` field under `common` options. e.g.
 
 ```
 git-sc open 12345 -w myworkspace
