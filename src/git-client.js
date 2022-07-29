@@ -1,4 +1,4 @@
-import { execSync, exec } from "child_process";
+import { execSync } from "child_process";
 
 export default class GitClient {
   constructor({ dir, debug = false }) {
@@ -13,7 +13,7 @@ export default class GitClient {
   }
 
   do({ command, opts }, errorHandler) {
-    let fullOpts = { cwd: this.dir, ...opts };
+    let fullOpts = { cwd: this.dir, ...opts, stdio: "pipe" };
 
     if (this.debug) {
       console.log(

@@ -27,23 +27,37 @@ export const createNewBranch = (newBranchName, errorHandler) => {
     create: true,
   });
 
-  // todo - add a create option to determine what to do here. User might want to just append a number
   if (!result.success) {
-    if (
-      result.output.includes("already exists") &&
-      config.createOptions.overwriteExistingBranch
-    ) {
-      console.warn("git-sc is OVERWRITING existing branch");
+    if (result.output.includes("already exists")) {
+      switch (config.createOptions.onBranchExists) {
+        case "abort":
+          console.warn(`Branch '${newBranchName} already exists`);
+          return;
+        case "checkout":
+          console.warn(`Checking out existing branch '${newBranchName}'`);
+          git.checkout(
+            {
+              branchName: newBranchName,
+              create: false,
+            },
+            errorHandler
+          );
 
-      git.delete({ branchName: newBranchName, force: true }, errorHandler);
+          return;
+        case "overwrite":
+          console.warn(`OVERWRITING existing branch '${newBranchName}'`);
+          git.delete({ branchName: newBranchName, force: true }, errorHandler);
 
-      git.checkout(
-        {
-          branchName: newBranchName,
-          create: true,
-        },
-        errorHandler
-      );
+          git.checkout(
+            {
+              branchName: newBranchName,
+              create: true,
+            },
+            errorHandler
+          );
+
+          break;
+      }
     } else {
       console.error(`Unexpected git error:\n${result.output}`);
       process.exit();

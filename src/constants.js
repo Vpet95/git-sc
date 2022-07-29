@@ -33,8 +33,8 @@ export const DEFAULT_OPTIONS = {
     branchPrefix: "sc",
     branchKeywordCountLimit: 5,
     branchRemote: "origin",
-    overwriteExistingBranch: false,
     createAndLinkToRemote: true,
+    onBranchExists: "checkout",
   },
   delete: {
     force: false,

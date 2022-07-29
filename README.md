@@ -231,6 +231,7 @@ _Subject to change on a whim, and in no particular order_ 😅
 - [ ] Interactive mode / prompting
 - [ ] Rewrite git integration to make use of a more robust API
 - [ ] Test on Windows, update accordingly
+- [ ] Move app text to a common file
 
 ## Contributing
 

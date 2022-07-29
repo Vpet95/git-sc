@@ -68,8 +68,10 @@ const optionsSchema = Joi.object({
     branchPrefix: Joi.string(),
     branchKeywordCountLimit: Joi.number().integer().min(0),
     branchRemote: Joi.string().custom(refValidator),
-    overwriteExistingBranch: Joi.boolean(),
     createAndLinkToRemote: Joi.boolean(),
+    onBranchExists: Joi.string()
+      .valid("abort", "checkout", "overwrite") // todo - add an option for re-name; will need to replace prompt with readline
+      .insensitive(),
   }).with("topicTaggingApiKey", "rapidApiHost"),
   delete: purgeSchema,
   clean: purgeSchema.concat(
