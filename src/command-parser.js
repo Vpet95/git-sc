@@ -11,6 +11,7 @@ import {
   deleteBranch,
   cleanBranches,
   openStory,
+  listStories,
 } from "./app.js";
 
 const program = commander.program;
@@ -146,11 +147,21 @@ class CommandParser {
         openStory(storyId, options.workspace);
       });
 
+    const listCommand = new commander.Command("list");
+    listCommand
+      .description(
+        "Lists Shortcut tickets by some configurable range. Defaults to tickets assigned to you."
+      )
+      .action((options, __) => {
+        listStories();
+      });
+
     program.addCommand(initCommand);
     program.addCommand(createCommand);
     program.addCommand(deleteCommand);
     program.addCommand(cleanCommand);
     program.addCommand(openCommand);
+    program.addCommand(listCommand);
 
     program.parse();
   }

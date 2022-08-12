@@ -43,8 +43,8 @@ export const generateURL = ({ baseURL, resource = null, params = [] }) => {
       ? `?${params.reduce(
           (prev, current) =>
             prev.length === 0
-              ? `${current.name}=${current.value.replaceAll(/\s/g, "%20")}`
-              : `${prev}&${current.name}=${current.value.replaceAll(
+              ? `${current.name}=${current.value.replace(/\s/g, "%20")}`
+              : `${prev}&${current.name}=${current.value.replace(
                   /\s/g,
                   "%20"
                 )}`,

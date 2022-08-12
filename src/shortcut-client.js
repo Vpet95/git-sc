@@ -164,3 +164,23 @@ export const getSelf = () => {
     cacheKey: "self",
   });
 };
+
+export const searchStories = () => {
+  return get({
+    baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
+    params: [
+      {
+        name: "page_size",
+        value: "1",
+      },
+      {
+        name: "query",
+        value: "owner:vpet",
+      },
+      {
+        name: "next",
+        value: "082d8deaadfb1f5f6c1a835bc003b4454e19b49d~0",
+      },
+    ],
+  });
+};

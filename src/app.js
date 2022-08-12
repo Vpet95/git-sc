@@ -13,7 +13,12 @@ import {
   getRemoteOf,
 } from "./git-utils.js";
 import { generateName } from "./name-utils.js";
-import { getStory, getState, getMember } from "./shortcut-client.js";
+import {
+  getStory,
+  getState,
+  getMember,
+  searchStories,
+} from "./shortcut-client.js";
 import { assertSuccess, selectionPrompt } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
 import { extractStoryIdFromBranchName } from "./utils.js";
@@ -114,7 +119,7 @@ async function validateDeleteConditionsAndPrompt(
       !(await options.filters.stateFilterPasses(story)) ||
       !(await options.filters.ownerFilterPasses(story))
     ) {
-      // todo - maybe specify what
+      // todo - maybe specify what filter caused this
       console.warn(`Branch ${branchName} filtered out by configuration`);
       return false;
     }
@@ -283,4 +288,10 @@ export const openStory = (storyId, workspace = undefined) => {
   const openURL = `https://app.shortcut.com/${workspaceName}/story/${storyId}/`;
 
   open(openURL);
+};
+
+export const listStories = async () => {
+  const stories = await searchStories();
+
+  console.log(JSON.stringify(stories, null, 2));
 };
