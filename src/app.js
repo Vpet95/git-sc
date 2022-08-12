@@ -19,6 +19,7 @@ import {
   getMember,
   searchStories,
 } from "./shortcut-client.js";
+import { sortStoriesByUniqueStateIds } from "./shortcut-utils.js";
 import { assertSuccess, selectionPrompt } from "./utils.js";
 import { UNDELETABLE_BRANCHES } from "./constants.js";
 import { extractStoryIdFromBranchName } from "./utils.js";
@@ -292,6 +293,7 @@ export const openStory = (storyId, workspace = undefined) => {
 
 export const listStories = async () => {
   const stories = await searchStories();
+  const enrichedAndSorted = await sortStoriesByUniqueStateIds(stories);
 
-  console.log(JSON.stringify(stories, null, 2));
+  //writeFileSync("stories.json", JSON.stringify(enriched, null, 2));
 };

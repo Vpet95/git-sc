@@ -1,7 +1,9 @@
 import https from "https";
+import { promises as fs } from "fs";
 import { isValidURL, generateURL } from "./utils.js";
 
 let API_KEY = "";
+const MOCK_API_CALLS = process.env.MOCK;
 
 // a little safeguard - at this time at no point should git-sc be processing multiple API requests
 // at once - if it is, I'm most likely missing an await somewhere
@@ -100,7 +102,7 @@ const getCached = async ({ cacheKey, ...opts }, expectedStatusCode) => {
     shortcutCache[cacheKey] = result;
   }
 
-  return result;
+  return Promise.resolve(result);
 };
 
 export const getStory = (ticketId, allowConcurrent = false) => {
@@ -111,11 +113,18 @@ export const getStory = (ticketId, allowConcurrent = false) => {
   });
 };
 
-export const getWorkflows = () => {
-  return getCached({
-    baseURL: "https://api.app.shortcut.com/api/v3/workflows",
-    cacheKey: "workflows",
-  });
+export const getWorkflows = async () => {
+  if (MOCK_API_CALLS) {
+    // funny, but we need to parse it; and we still need to return a Promise
+    return Promise.resolve(
+      JSON.parse(await fs.readFile("shortcut payloads/workflows.json"))
+    );
+  } else {
+    return getCached({
+      baseURL: "https://api.app.shortcut.com/api/v3/workflows",
+      cacheKey: "workflows",
+    });
+  }
 };
 
 export const getState = async (stateId) => {
@@ -165,10 +174,19 @@ export const getSelf = () => {
   });
 };
 
-export const searchStories = () => {
-  return get({
-    baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
-    params: [
+export const searchStories = async () => {
+  let data = [];
+
+  if (MOCK_API_CALLS) {
+    // using readFile instead of readFileSync to simulate the asynchronicity of an api call
+    data = JSON.parse(
+      await fs.readFile("shortcut payloads/assigned-stories.json")
+    );
+  } else {
+    let result = null;
+
+    // todo - refactor this to be responsive to actual configuration
+    const baseParams = [
       {
         name: "page_size",
         value: "1",
@@ -177,10 +195,32 @@ export const searchStories = () => {
         name: "query",
         value: "owner:vpet",
       },
-      {
+    ];
+
+    do {
+      const next = result?.next && {
         name: "next",
-        value: "082d8deaadfb1f5f6c1a835bc003b4454e19b49d~0",
-      },
-    ],
-  });
+        value: result.next.substring(
+          result.next.lastIndexOf("=") + 1,
+          result.next.length
+        ),
+      };
+
+      result = await get({
+        baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
+        params: [...baseParams, ...(Boolean(next) ? [next] : [])],
+      });
+
+      if (result.data) data = data.concat(result.data);
+    } while (result.next);
+  }
+
+  return data.map((story) => ({
+    started: story.started,
+    completed: story.completed,
+    name: story.name,
+    epic_id: story.epic_id,
+    workflow_state_id: story.workflow_state_id,
+    id: story.id,
+  }));
 };
