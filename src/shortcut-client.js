@@ -2,6 +2,7 @@ import https from "https";
 import { promises as fs } from "fs";
 import { existsSync } from "fs";
 import { isValidURL, generateURL } from "./utils.js";
+import { MAX_SEARCH_PAGE_SIZE, MAX_SEARCH_RESULT_COUNT } from "./constants.js";
 
 let API_KEY = "";
 // const MOCK_API_CALLS = process.env.MOCK;
@@ -197,6 +198,7 @@ const processOwnerMentionName = async (owner) => {
 
 const generateQueryString = async (options) => {
   options.owner = await processOwnerMentionName(options.owner);
+  if (options.epic) options.epic = `\"${options.epic}\"`;
 
   return Object.keys(options)
     .map((key) => `${key}:${options[key]}`)
@@ -204,7 +206,7 @@ const generateQueryString = async (options) => {
 };
 
 // todo - consider what to do with search queries that could return > 1k results
-export const searchStories = async (searchOptions) => {
+export const searchStories = async (searchOptions, limit) => {
   let data = [];
 
   if (MOCK_API_CALLS) {
@@ -216,16 +218,12 @@ export const searchStories = async (searchOptions) => {
     let result = null;
     const searchQuery = await generateQueryString(searchOptions);
 
-    const params = {
-      page_size: 25,
-      query: searchQuery,
-    };
-
     do {
       result = await get({
         baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
         params: {
-          ...params,
+          query: `${searchQuery}`,
+          page_size: Math.min(MAX_SEARCH_PAGE_SIZE, limit - data.length),
           ...(Boolean(result?.next)
             ? {
                 next: result.next.substring(
@@ -238,7 +236,7 @@ export const searchStories = async (searchOptions) => {
       });
 
       if (result.data) data = data.concat(result.data);
-    } while (result.next);
+    } while (result.next && data.length < limit);
   }
 
   return data.length

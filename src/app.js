@@ -35,8 +35,14 @@ const prompt = promptSync();
 
 const TERM_WIDTH = process.stdout.columns;
 const TICKET_WIDTH = 7;
-const NAME_WIDTH = Math.floor((TERM_WIDTH - TICKET_WIDTH) * 0.6);
-const EPIC_WIDTH = Math.floor((TERM_WIDTH - TICKET_WIDTH) * 0.4);
+const COLUMN_COUNT = 3;
+const SEPARATOR_WIDTH = 3;
+const NAME_WIDTH = Math.floor(
+  (TERM_WIDTH - (TICKET_WIDTH + (COLUMN_COUNT - 1) * SEPARATOR_WIDTH)) * 0.6
+);
+const EPIC_WIDTH = Math.floor(
+  (TERM_WIDTH - (TICKET_WIDTH + (COLUMN_COUNT - 1) * SEPARATOR_WIDTH)) * 0.4
+);
 
 export const initApp = (fileName, force = false) => {
   if (existsSync(fileName)) {
@@ -302,14 +308,20 @@ export const openStory = (storyId, workspace = undefined) => {
   open(openURL);
 };
 
-export const listStories = async (owner, type) => {
+export const listStories = async (owner, type, epic, limit) => {
   console.time();
 
-  const stories = await searchStories({
-    ...getConfig().listOptions,
-    ...(owner ? { owner: owner } : {}),
-    ...(type ? { type: type } : {}),
-  });
+  const listOpts = getConfig().listOptions;
+
+  const stories = await searchStories(
+    {
+      ...listOpts.query,
+      ...(owner ? { owner: owner } : {}),
+      ...(type ? { type: type } : {}),
+      ...(epic ? { epic: epic } : {}),
+    },
+    limit || listOpts.limit
+  );
 
   if (stories === null) {
     console.log(`No Shortcut stories matched your query.`);
@@ -333,7 +345,7 @@ export const listStories = async (owner, type) => {
       columnSplitter: " | ",
     });
 
-    console.log(underline(key, TICKET_WIDTH + NAME_WIDTH + EPIC_WIDTH));
+    console.log(underline(key, process.stdout.columns - 1));
     console.log(`${columns}\n`);
   });
   console.timeEnd();

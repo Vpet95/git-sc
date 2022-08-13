@@ -19,6 +19,10 @@ const branchDeletionFilters = {
   },
 };
 
+export const UNDELETABLE_BRANCHES = ["develop", "main", "master"];
+export const MAX_SEARCH_RESULT_COUNT = 1000;
+export const MAX_SEARCH_PAGE_SIZE = 25;
+
 export const DEFAULT_OPTIONS = {
   common: {
     shortcutApiKey: "",
@@ -52,8 +56,9 @@ export const DEFAULT_OPTIONS = {
     prompt: true,
   },
   list: {
-    owner: "self",
+    query: {
+      owner: "self",
+    },
+    limit: MAX_SEARCH_RESULT_COUNT,
   },
 };
-
-export const UNDELETABLE_BRANCHES = ["develop", "main", "master"];

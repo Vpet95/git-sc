@@ -6,6 +6,7 @@ import {
   DEFAULT_CONFIG_FILENAME,
   DEFAULT_CONFIG_LOCATIONS,
   DEFAULT_OPTIONS,
+  MAX_SEARCH_RESULT_COUNT,
 } from "./constants.js";
 import { includesAny, wrapLog } from "./utils.js";
 import GitClient from "./git-client.js";
@@ -84,8 +85,12 @@ const optionsSchema = Joi.object({
     })
   ),
   list: Joi.object({
-    owner: Joi.string(),
-    type: Joi.string().allow("feature", "bug", "chore").insensitive(),
+    query: Joi.object({
+      epic: Joi.string(),
+      owner: Joi.string(),
+      type: Joi.string().allow("feature", "bug", "chore").insensitive(),
+    }),
+    limit: Joi.number().min(1).max(MAX_SEARCH_RESULT_COUNT),
   }),
 });
 
