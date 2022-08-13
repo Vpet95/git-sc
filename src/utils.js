@@ -31,7 +31,10 @@ export const assertSuccess = (status) => {
   }
 };
 
-export const generateURL = ({ baseURL, resource = null, params = [] }) => {
+// is by no means intended to be a be-all-end-all URL formatter - I left out a ton of logic
+// because I didn't need it in git-sc; however this is a really fascinating read:
+// https://stackoverflow.com/a/29948396/3578493
+export const generateURL = ({ baseURL, resource = null, params = null }) => {
   return `${baseURL}${
     resource !== null
       ? baseURL[baseURL.length - 1] === "/"
@@ -39,17 +42,11 @@ export const generateURL = ({ baseURL, resource = null, params = [] }) => {
         : `/${resource}`
       : ""
   }${
-    params.length
-      ? `?${params.reduce(
-          (prev, current) =>
-            prev.length === 0
-              ? `${current.name}=${current.value.replace(/\s/g, "%20")}`
-              : `${prev}&${current.name}=${current.value.replace(
-                  /\s/g,
-                  "%20"
-                )}`,
-          ""
-        )}`
+    params
+      ? `?${Object.keys(params)
+          .map((key) => `${key}=${params[key]}`)
+          .join("&")
+          .replace(/\s/, "%20")}`
       : ""
   }`;
 };

@@ -31,7 +31,7 @@ const get = async (
   {
     baseURL,
     resource = null,
-    params = [],
+    params = null,
     allowConcurrent = false,
     mockFile = "",
   },
@@ -197,17 +197,10 @@ export const searchStories = async (userMentionName) => {
   } else {
     let result = null;
 
-    // todo - refactor this to be responsive to actual configuration
-    const baseParams = [
-      {
-        name: "page_size",
-        value: "25",
-      },
-      {
-        name: "query",
-        value: `owner:${userMentionName}`,
-      },
-    ];
+    const params = {
+      page_size: 25,
+      query: `owner:${userMentionName}`,
+    };
 
     do {
       const next = result?.next && {
@@ -220,7 +213,7 @@ export const searchStories = async (userMentionName) => {
 
       result = await get({
         baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
-        params: [...baseParams, ...(Boolean(next) ? [next] : [])],
+        params: { ...params, ...(Boolean(next) ? { next } : {}) },
       });
 
       if (result.data) data = data.concat(result.data);
