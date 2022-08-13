@@ -302,7 +302,10 @@ export const openStory = (storyId, workspace = undefined) => {
   open(openURL);
 };
 
-const getMentionName = async () => {
+const getMentionName = async (user) => {
+  // command-line option overrides config
+  if (user) return user;
+
   const configName = getConfig().searchOptions?.user;
 
   if (!configName || configName.toLowerCase() === "self") {
@@ -314,10 +317,10 @@ const getMentionName = async () => {
   return configName;
 };
 
-export const listStories = async () => {
+export const listStories = async (user) => {
   console.time();
 
-  const mentionName = await getMentionName();
+  const mentionName = await getMentionName(user);
 
   const stories = await searchStories(mentionName);
   const enriched = await groupStoriesByState(stories);
