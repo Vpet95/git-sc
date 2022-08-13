@@ -52,7 +52,7 @@ export const DEFAULT_OPTIONS = {
     prompt: true,
   },
   list: {
-    user: "self",
+    owner: "self",
   },
 };
 

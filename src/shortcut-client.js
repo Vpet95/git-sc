@@ -186,7 +186,25 @@ export const getSelf = () => {
   });
 };
 
-export const searchStories = async (userMentionName) => {
+const processOwnerMentionName = async (owner) => {
+  if (!owner || owner.toLowerCase() === "self") {
+    const self = await getSelf();
+    return self.mention_name;
+  }
+
+  return owner;
+};
+
+const generateQueryString = async (options) => {
+  options.owner = await processOwnerMentionName(options.owner);
+
+  return Object.keys(options)
+    .map((key) => `${key}:${options[key]}`)
+    .join(" AND ");
+};
+
+// todo - consider what to do with search queries that could return > 1k results
+export const searchStories = async (searchOptions) => {
   let data = [];
 
   if (MOCK_API_CALLS) {
@@ -196,38 +214,43 @@ export const searchStories = async (userMentionName) => {
     );
   } else {
     let result = null;
+    const searchQuery = await generateQueryString(searchOptions);
 
     const params = {
       page_size: 25,
-      query: `owner:${userMentionName}`,
+      query: searchQuery,
     };
 
     do {
-      const next = result?.next && {
-        name: "next",
-        value: result.next.substring(
-          result.next.lastIndexOf("=") + 1,
-          result.next.length
-        ),
-      };
-
       result = await get({
         baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
-        params: { ...params, ...(Boolean(next) ? { next } : {}) },
+        params: {
+          ...params,
+          ...(Boolean(result?.next)
+            ? {
+                next: result.next.substring(
+                  result.next.lastIndexOf("=") + 1,
+                  result.next.length
+                ),
+              }
+            : {}),
+        },
       });
 
       if (result.data) data = data.concat(result.data);
     } while (result.next);
   }
 
-  return data.map((story) => ({
-    started: story.started,
-    completed: story.completed,
-    name: story.name,
-    epic_id: story.epic_id,
-    workflow_state_id: story.workflow_state_id,
-    id: story.id,
-  }));
+  return data.length
+    ? data.map((story) => ({
+        started: story.started,
+        completed: story.completed,
+        name: story.name,
+        epic_id: story.epic_id,
+        workflow_state_id: story.workflow_state_id,
+        id: story.id,
+      }))
+    : null;
 };
 
 export const getEpic = async (epicId) => {

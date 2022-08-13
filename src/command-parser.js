@@ -150,14 +150,18 @@ class CommandParser {
     const listCommand = new commander.Command("list");
     listCommand
       .option(
-        "-u, --user <mention name>",
-        "The @mention name of the Shortcut user in your Workspace"
+        "-o, --owner <owner's mention name>",
+        "The @mention name of the Shortcut user in your Workspace that owns the tickets"
+      )
+      .option(
+        "-t, --type <ticket type>",
+        "The type of Shortcut ticket to search for. Can be 'feature', 'bug', or 'chore'"
       )
       .description(
         "Lists Shortcut tickets by some configurable range. Defaults to tickets assigned to you."
       )
       .action((options, __) => {
-        listStories(options.user);
+        listStories(options.owner, options.type);
       });
 
     program.addCommand(initCommand);

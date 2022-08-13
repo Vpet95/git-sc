@@ -302,27 +302,20 @@ export const openStory = (storyId, workspace = undefined) => {
   open(openURL);
 };
 
-const getMentionName = async (user) => {
-  // command-line option overrides config
-  if (user) return user;
-
-  const configName = getConfig().listOptions?.user;
-
-  if (!configName || configName.toLowerCase() === "self") {
-    const self = await getSelf();
-
-    return self.mention_name;
-  }
-
-  return configName;
-};
-
-export const listStories = async (user) => {
+export const listStories = async (owner, type) => {
   console.time();
 
-  const mentionName = await getMentionName(user);
+  const stories = await searchStories({
+    ...getConfig().listOptions,
+    ...(owner ? { owner: owner } : {}),
+    ...(type ? { type: type } : {}),
+  });
 
-  const stories = await searchStories(mentionName);
+  if (stories === null) {
+    console.log(`No Shortcut stories matched your query.`);
+    return;
+  }
+
   const enriched = await groupStoriesByState(stories);
   const sorted = sortStoriesByState(enriched);
 

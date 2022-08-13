@@ -84,8 +84,8 @@ const optionsSchema = Joi.object({
     })
   ),
   list: Joi.object({
-    // default to "self"
-    user: Joi.string().optional(),
+    owner: Joi.string(),
+    type: Joi.string().allow("feature", "bug", "chore").insensitive(),
   }),
 });
 
