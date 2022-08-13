@@ -51,6 +51,9 @@ export const DEFAULT_OPTIONS = {
     filters: structuredClone(branchDeletionFilters),
     prompt: true,
   },
+  search: {
+    user: "self",
+  },
 };
 
 export const UNDELETABLE_BRANCHES = ["develop", "main", "master"];

@@ -17,6 +17,7 @@ import {
 import { generateName } from "./name-utils.js";
 import {
   getMember,
+  getSelf,
   getState,
   getStory,
   searchStories,
@@ -31,6 +32,11 @@ import {
 
 import promptSync from "prompt-sync";
 const prompt = promptSync();
+
+const TERM_WIDTH = process.stdout.columns;
+const TICKET_WIDTH = 7;
+const NAME_WIDTH = Math.floor((TERM_WIDTH - TICKET_WIDTH) * 0.6);
+const EPIC_WIDTH = Math.floor((TERM_WIDTH - TICKET_WIDTH) * 0.4);
 
 export const initApp = (fileName, force = false) => {
   if (existsSync(fileName)) {
@@ -296,24 +302,43 @@ export const openStory = (storyId, workspace = undefined) => {
   open(openURL);
 };
 
+const getMentionName = async () => {
+  const configName = getConfig().searchOptions?.user;
+
+  if (!configName || configName.toLowerCase() === "self") {
+    const self = await getSelf();
+
+    return self.mention_name;
+  }
+
+  return configName;
+};
+
 export const listStories = async () => {
-  const stories = await searchStories();
+  console.time();
+
+  const mentionName = await getMentionName();
+
+  const stories = await searchStories(mentionName);
   const enriched = await groupStoriesByState(stories);
   const sorted = sortStoriesByState(enriched);
 
+  console.log("\n");
+
   Object.keys(sorted).forEach((key) => {
-    console.log(underline(key, 75));
     const columns = columnify(sorted[key].stories, {
-      columns: ["id", "name"],
-      minWidth: 10,
+      columns: ["id", "name", "epicName"],
+      minWidth: TICKET_WIDTH,
       config: {
-        name: { maxWidth: 60 },
+        name: { maxWidth: NAME_WIDTH },
+        epicName: { maxWidth: EPIC_WIDTH },
       },
       showHeaders: false,
       columnSplitter: " | ",
     });
 
-    console.log(columns);
-    console.log("\n");
+    console.log(underline(key, TICKET_WIDTH + NAME_WIDTH + EPIC_WIDTH));
+    console.log(`${columns}\n`);
   });
+  console.timeEnd();
 };

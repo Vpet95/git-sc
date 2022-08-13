@@ -1,4 +1,4 @@
-import { getWorkflows, getState } from "./shortcut-client.js";
+import { getWorkflows, getState, getEpic } from "./shortcut-client.js";
 
 // grabs the state id and position - position refers to the ordering of states
 // (e.g. 'Scheduled for Dev' is to the left of 'On Dev'); i.e. higher position = more "done"
@@ -36,8 +36,10 @@ export const groupStoriesByState = async (stories) => {
   const states = {};
   const results = {};
 
-  for (let i = 0; i < stories.length; ++i) {
-    const story = stories[i];
+  const epicified = await fillAndSortByEpicName(stories);
+
+  for (let i = 0; i < epicified.length; ++i) {
+    const story = epicified[i];
 
     // convert state id to state object, or grab existing state object
     const stateObj =
@@ -74,4 +76,22 @@ export const sortStoriesByState = (stories) => {
   storyMap.sort((a, b) => a[1].position - b[1].position);
 
   return Object.fromEntries(storyMap);
+};
+
+export const fillAndSortByEpicName = async (stories) => {
+  // needed a for-loop here since I'm caching the epics
+  // and I want to make sure they're available before the next story with the same
+  // epic id runs through getEpic
+  for (let story of stories) {
+    if (!story.epic_id) {
+      story.epicName = "<No epic>";
+      continue;
+    }
+
+    const { name } = await getEpic(story.epic_id);
+
+    story.epicName = name;
+  }
+
+  return stories.sort((a, b) => a.epicName.localeCompare(b.epicName));
 };

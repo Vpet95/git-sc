@@ -152,7 +152,7 @@ class CommandParser {
       .description(
         "Lists Shortcut tickets by some configurable range. Defaults to tickets assigned to you."
       )
-      .action((options, __) => {
+      .action(async (options, __) => {
         listStories();
       });
 

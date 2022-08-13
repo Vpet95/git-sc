@@ -1,18 +1,21 @@
 import https from "https";
 import { promises as fs } from "fs";
+import { existsSync } from "fs";
 import { isValidURL, generateURL } from "./utils.js";
 
 let API_KEY = "";
-const MOCK_API_CALLS = process.env.MOCK;
+// const MOCK_API_CALLS = process.env.MOCK;
+const MOCK_API_CALLS = false;
 
 // a little safeguard - at this time at no point should git-sc be processing multiple API requests
 // at once - if it is, I'm most likely missing an await somewhere
 let requestCount = 0;
 
 const shortcutCache = {
+  epics: null,
   members: null,
-  workflows: null,
   self: null,
+  workflows: null,
 };
 
 export const setShortcutAPIKey = (key) => {
@@ -24,10 +27,24 @@ export const setShortcutAPIKey = (key) => {
   }
 };
 
-const get = (
-  { baseURL, resource = null, params = [], allowConcurrent = false },
+const get = async (
+  {
+    baseURL,
+    resource = null,
+    params = [],
+    allowConcurrent = false,
+    mockFile = "",
+  },
   expectedStatusCode = 200
 ) => {
+  if (mockFile && MOCK_API_CALLS) {
+    const fullMockfileName = `shortcut payloads/${mockFile}`;
+
+    if (existsSync(fullMockfileName)) {
+      return Promise.resolve(JSON.parse(await fs.readFile(fullMockfileName)));
+    }
+  }
+
   // assemble and validate a full url; final possible output looks like: https://www.somesite.com/1234?param1="abc"&param2="def"
   const fullURL = generateURL({ baseURL, resource, params });
   if (!isValidURL(fullURL)) throw new Error(`[${fullURL}] is not a valid URL`);
@@ -114,17 +131,11 @@ export const getStory = (ticketId, allowConcurrent = false) => {
 };
 
 export const getWorkflows = async () => {
-  if (MOCK_API_CALLS) {
-    // funny, but we need to parse it; and we still need to return a Promise
-    return Promise.resolve(
-      JSON.parse(await fs.readFile("shortcut payloads/workflows.json"))
-    );
-  } else {
-    return getCached({
-      baseURL: "https://api.app.shortcut.com/api/v3/workflows",
-      cacheKey: "workflows",
-    });
-  }
+  return getCached({
+    baseURL: "https://api.app.shortcut.com/api/v3/workflows",
+    cacheKey: "workflows",
+    mockFile: "workflows.json",
+  });
 };
 
 export const getState = async (stateId) => {
@@ -171,14 +182,15 @@ export const getSelf = () => {
   return getCached({
     baseURL: "https://api.app.shortcut.com/api/v3/member",
     cacheKey: "self",
+    mockFile: "self.json",
   });
 };
 
-export const searchStories = async () => {
+export const searchStories = async (userMentionName) => {
   let data = [];
 
   if (MOCK_API_CALLS) {
-    // using readFile instead of readFileSync to simulate the asynchronicity of an api call
+    // can't use get()'s mock logic since there's so much custom logic happening here
     data = JSON.parse(
       await fs.readFile("shortcut payloads/assigned-stories.json")
     );
@@ -193,7 +205,7 @@ export const searchStories = async () => {
       },
       {
         name: "query",
-        value: "owner:vpet",
+        value: `owner:${userMentionName}`,
       },
     ];
 
@@ -223,4 +235,20 @@ export const searchStories = async () => {
     workflow_state_id: story.workflow_state_id,
     id: story.id,
   }));
+};
+
+export const getEpic = async (epicId) => {
+  if (shortcutCache.epics?.[epicId]) return shortcutCache.epics[epicId];
+
+  const epic = await get({
+    baseURL: "https://api.app.shortcut.com/api/v3/epics",
+    resource: epicId,
+  });
+
+  if (!shortcutCache.epics) shortcutCache.epics = {};
+
+  // at this point I'm only interested in epic names; someday I might expand on this
+  shortcutCache.epics[epicId] = { name: epic.name };
+
+  return shortcutCache.epics[epicId];
 };
