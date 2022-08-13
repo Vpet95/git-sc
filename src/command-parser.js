@@ -162,6 +162,10 @@ class CommandParser {
         "Limits results to only stories that belong to the given epic. Value does not need to be the full epic name."
       )
       .option(
+        "-s, --state <search text>",
+        "Limits results to only stories in the given state"
+      )
+      .option(
         "-l, --limit <number>",
         "Limit search results to this number of items"
       )
@@ -169,7 +173,7 @@ class CommandParser {
         "Lists Shortcut tickets by some configurable range. Defaults to tickets assigned to you."
       )
       .action((options, __) => {
-        listStories(options.owner, options.type, options.epic, options.limit);
+        listStories(options);
       });
 
     program.addCommand(initCommand);

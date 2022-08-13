@@ -88,6 +88,7 @@ const optionsSchema = Joi.object({
     query: Joi.object({
       epic: Joi.string(),
       owner: Joi.string(),
+      state: Joi.string(),
       type: Joi.string().allow("feature", "bug", "chore").insensitive(),
     }),
     limit: Joi.number().min(1).max(MAX_SEARCH_RESULT_COUNT),

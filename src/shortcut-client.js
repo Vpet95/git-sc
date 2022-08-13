@@ -2,7 +2,7 @@ import https from "https";
 import { promises as fs } from "fs";
 import { existsSync } from "fs";
 import { isValidURL, generateURL } from "./utils.js";
-import { MAX_SEARCH_PAGE_SIZE, MAX_SEARCH_RESULT_COUNT } from "./constants.js";
+import { MAX_SEARCH_PAGE_SIZE, QUOTED_SEARCH_QUERIES } from "./constants.js";
 
 let API_KEY = "";
 // const MOCK_API_CALLS = process.env.MOCK;
@@ -198,7 +198,10 @@ const processOwnerMentionName = async (owner) => {
 
 const generateQueryString = async (options) => {
   options.owner = await processOwnerMentionName(options.owner);
-  if (options.epic) options.epic = `\"${options.epic}\"`;
+
+  QUOTED_SEARCH_QUERIES.forEach((query) => {
+    if (options[query]) options[query] = `\"${options[query]}\"`;
+  });
 
   return Object.keys(options)
     .map((key) => `${key}:${options[key]}`)
@@ -222,7 +225,6 @@ export const searchStories = async (searchOptions, limit) => {
       result = await get({
         baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
         params: {
-          query: `${searchQuery}`,
           page_size: Math.min(MAX_SEARCH_PAGE_SIZE, limit - data.length),
           ...(Boolean(result?.next)
             ? {
@@ -232,6 +234,7 @@ export const searchStories = async (searchOptions, limit) => {
                 ),
               }
             : {}),
+          query: `${searchQuery}`,
         },
       });
 

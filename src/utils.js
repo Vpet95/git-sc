@@ -46,8 +46,8 @@ export const generateURL = ({ baseURL, resource = null, params = null }) => {
       ? `?${Object.keys(params)
           .map((key) => `${key}=${params[key]}`)
           .join("&")
-          .replace(/\s/, "%20")
-          .replace('"', "%22")}`
+          .replace(/\s/g, "%20")
+          .replace(/"/g, "%22")}`
       : ""
   }`;
 };
