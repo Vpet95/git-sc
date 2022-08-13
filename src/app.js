@@ -5,7 +5,9 @@
 
 import { existsSync, writeFileSync } from "fs";
 import open from "open";
+import columnify from "columnify";
 import { getConfig } from "./config.js";
+import { UNDELETABLE_BRANCHES } from "./constants.js";
 import { getGitClient } from "./git-client.js";
 import {
   createNewBranch,
@@ -14,15 +16,18 @@ import {
 } from "./git-utils.js";
 import { generateName } from "./name-utils.js";
 import {
-  getStory,
-  getState,
   getMember,
+  getState,
+  getStory,
   searchStories,
 } from "./shortcut-client.js";
-import { sortStoriesByUniqueStateIds } from "./shortcut-utils.js";
-import { assertSuccess, selectionPrompt } from "./utils.js";
-import { UNDELETABLE_BRANCHES } from "./constants.js";
-import { extractStoryIdFromBranchName } from "./utils.js";
+import { groupStoriesByState, sortStoriesByState } from "./shortcut-utils.js";
+import {
+  assertSuccess,
+  extractStoryIdFromBranchName,
+  selectionPrompt,
+  underline,
+} from "./utils.js";
 
 import promptSync from "prompt-sync";
 const prompt = promptSync();
@@ -293,7 +298,22 @@ export const openStory = (storyId, workspace = undefined) => {
 
 export const listStories = async () => {
   const stories = await searchStories();
-  const enrichedAndSorted = await sortStoriesByUniqueStateIds(stories);
+  const enriched = await groupStoriesByState(stories);
+  const sorted = sortStoriesByState(enriched);
 
-  //writeFileSync("stories.json", JSON.stringify(enriched, null, 2));
+  Object.keys(sorted).forEach((key) => {
+    console.log(underline(key, 75));
+    const columns = columnify(sorted[key].stories, {
+      columns: ["id", "name"],
+      minWidth: 10,
+      config: {
+        name: { maxWidth: 60 },
+      },
+      showHeaders: false,
+      columnSplitter: " | ",
+    });
+
+    console.log(columns);
+    console.log("\n");
+  });
 };

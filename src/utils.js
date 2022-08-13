@@ -157,3 +157,6 @@ export const extractStoryIdFromBranchName = (branchName) => {
 
   return storyId;
 };
+
+export const underline = (str, customLength = null) =>
+  `${str}\n${"-".repeat(customLength || str.length)}`;

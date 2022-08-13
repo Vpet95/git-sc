@@ -32,29 +32,46 @@ export const stateDataFromNames = async (stateNames) => {
   return states.filter((elem) => elem !== undefined);
 };
 
-// takes a list of Shortcut stories, grabs only unique states from the given ids, and then
-// sorts the stories by the 'position' of their states - this will typically be in ticket progress order
-export const sortStoriesByUniqueStateIds = async (stories) => {
+export const groupStoriesByState = async (stories) => {
   const states = {};
-  const results = [];
+  const results = {};
 
   for (let i = 0; i < stories.length; ++i) {
     const story = stories[i];
 
-    if (story.workflow_state_id in states) {
-      results.push({ ...story, state: states[story.workflow_state_id] });
-      continue;
+    // convert state id to state object, or grab existing state object
+    const stateObj =
+      story.workflow_state_id in states
+        ? states[story.workflow_state_id]
+        : await getState(story.workflow_state_id);
+
+    // weirdly, some of our states have trailing spaces
+    stateObj.name = stateObj.name.trim();
+
+    if (stateObj.name in results) {
+      results[stateObj.name].stories.push(story);
+    } else {
+      results[stateObj.name] = {
+        stories: [story],
+        position: stateObj.position,
+      };
     }
 
-    const stateData = await getState(story.workflow_state_id);
-    const sliceOfData = {
-      name: stateData.name.trim(),
-      position: stateData.position,
-    };
-    states[story.workflow_state_id] = sliceOfData;
-
-    results.push({ ...story, state: sliceOfData });
+    if (!(story.workflow_state_id in states))
+      states[story.workflow_state_id] = stateObj;
   }
 
-  return results.sort((a, b) => a.state.position - b.state.position);
+  return results;
+};
+
+export const sortStoriesByState = (stories) => {
+  const storyMap = [];
+
+  for (const state in stories) {
+    storyMap.push([state, stories[state]]);
+  }
+
+  storyMap.sort((a, b) => a[1].position - b[1].position);
+
+  return Object.fromEntries(storyMap);
 };
