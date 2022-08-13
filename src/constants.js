@@ -51,7 +51,7 @@ export const DEFAULT_OPTIONS = {
     filters: structuredClone(branchDeletionFilters),
     prompt: true,
   },
-  search: {
+  list: {
     user: "self",
   },
 };

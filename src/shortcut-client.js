@@ -201,7 +201,7 @@ export const searchStories = async (userMentionName) => {
     const baseParams = [
       {
         name: "page_size",
-        value: "1",
+        value: "25",
       },
       {
         name: "query",

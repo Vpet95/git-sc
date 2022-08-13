@@ -306,7 +306,7 @@ const getMentionName = async (user) => {
   // command-line option overrides config
   if (user) return user;
 
-  const configName = getConfig().searchOptions?.user;
+  const configName = getConfig().listOptions?.user;
 
   if (!configName || configName.toLowerCase() === "self") {
     const self = await getSelf();

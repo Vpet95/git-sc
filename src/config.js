@@ -83,7 +83,7 @@ const optionsSchema = Joi.object({
       onError: Joi.string().valid("stop, continue").insensitive(),
     })
   ),
-  search: Joi.object({
+  list: Joi.object({
     // default to "self"
     user: Joi.string().optional(),
   }),
@@ -168,8 +168,8 @@ class Config {
     return this.opts.clean;
   }
 
-  get searchOptions() {
-    return this.opts.search;
+  get listOptions() {
+    return this.opts.list;
   }
 
   all() {
