@@ -2,7 +2,11 @@ import https from "https";
 import { promises as fs } from "fs";
 import { existsSync } from "fs";
 import { isValidURL, generateURL } from "./utils.js";
-import { MAX_SEARCH_PAGE_SIZE, QUOTED_SEARCH_QUERIES } from "./constants.js";
+import {
+  MAX_SEARCH_PAGE_SIZE,
+  MAX_SEARCH_RESULT_COUNT,
+  QUOTED_SEARCH_QUERIES,
+} from "./constants.js";
 
 let API_KEY = "";
 // const MOCK_API_CALLS = process.env.MOCK;
@@ -219,13 +223,14 @@ export const searchStories = async (searchOptions, limit) => {
     );
   } else {
     let result = null;
+    const resultLimit = limit || MAX_SEARCH_RESULT_COUNT;
     const searchQuery = await generateQueryString(searchOptions);
 
     do {
       result = await get({
         baseURL: "https://api.app.shortcut.com/api/v3/search/stories",
         params: {
-          page_size: Math.min(MAX_SEARCH_PAGE_SIZE, limit - data.length),
+          page_size: Math.min(MAX_SEARCH_PAGE_SIZE, resultLimit - data.length),
           ...(Boolean(result?.next)
             ? {
                 next: result.next.substring(
@@ -234,12 +239,12 @@ export const searchStories = async (searchOptions, limit) => {
                 ),
               }
             : {}),
-          query: `${searchQuery}`,
+          query: searchQuery,
         },
       });
 
       if (result.data) data = data.concat(result.data);
-    } while (result.next && data.length < limit);
+    } while (result.next && data.length < resultLimit);
   }
 
   return data.length
