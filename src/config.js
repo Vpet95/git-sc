@@ -50,6 +50,16 @@ const purgeSchema = Joi.object({
   prompt: Joi.boolean(),
 });
 
+const searchSchema = Joi.object({
+  query: Joi.object({
+    epic: Joi.string(),
+    owner: Joi.string(),
+    state: Joi.string(),
+    type: Joi.string().allow("feature", "bug", "chore").insensitive(),
+  }),
+  limit: Joi.number().min(1).max(MAX_SEARCH_RESULT_COUNT),
+});
+
 // we're allowing unknown fields because they shouldn't disrupt our logic
 const optionsSchema = Joi.object({
   common: Joi.object({
@@ -77,22 +87,15 @@ const optionsSchema = Joi.object({
     onBranchExists: Joi.string()
       .valid("abort", "checkout", "overwrite") // todo - add an option for re-name; will need to replace prompt with readline
       .insensitive(),
-  }).with("topicTaggingApiKey", "rapidApiHost"),
+    autocomplete: searchSchema,
+  }),
   delete: purgeSchema,
   clean: purgeSchema.concat(
     Joi.object({
       onError: Joi.string().valid("stop, continue").insensitive(),
     })
   ),
-  list: Joi.object({
-    query: Joi.object({
-      epic: Joi.string(),
-      owner: Joi.string(),
-      state: Joi.string(),
-      type: Joi.string().allow("feature", "bug", "chore").insensitive(),
-    }),
-    limit: Joi.number().min(1).max(MAX_SEARCH_RESULT_COUNT),
-  }),
+  list: searchSchema,
 });
 
 class Config {

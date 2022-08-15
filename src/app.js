@@ -3,11 +3,11 @@
  * any major new features go in here
  */
 
-import { existsSync, writeFileSync } from "fs";
+import { existsSync, truncate, writeFileSync } from "fs";
 import open from "open";
 import columnify from "columnify";
 import { getConfig } from "./config.js";
-import { UNDELETABLE_BRANCHES } from "./constants.js";
+import { UNDELETABLE_BRANCHES, TICKET_ID_PROMPT } from "./constants.js";
 import { getGitClient } from "./git-client.js";
 import {
   createNewBranch,
@@ -17,7 +17,6 @@ import {
 import { generateName } from "./name-utils.js";
 import {
   getMember,
-  getSelf,
   getState,
   getStory,
   searchStories,
@@ -28,6 +27,9 @@ import {
   extractStoryIdFromBranchName,
   selectionPrompt,
   underline,
+  wrapLog,
+  complete,
+  truncateString,
 } from "./utils.js";
 
 import promptSync from "prompt-sync";
@@ -68,18 +70,89 @@ export const initApp = (fileName, force = false) => {
   }
 };
 
+const promptForDirectTicketId = () => {
+  const resp = prompt(TICKET_ID_PROMPT);
+
+  if (resp.trim().length === 0) {
+    console.log("Ok, canceled");
+    return null;
+  } else if (isNaN(resp)) {
+    console.error(
+      "Value supplied is not a valid ticket ID - expected positive integer"
+    );
+    return null;
+  } else {
+    return parseInt(resp.trim(), 10);
+  }
+};
+
+const promptForTicketIdWithAutocomplete = (stories) => {
+  const resp = prompt(TICKET_ID_PROMPT, {
+    sigint: false,
+    autocomplete: complete(
+      stories.map((story) =>
+        truncateString(
+          `${story.id} - ${story.name}`,
+          process.stdout.columns -
+            (TICKET_ID_PROMPT.length + String(story.id).length + 3)
+        )
+      )
+    ),
+  });
+
+  console.log(`resp: '${resp}'`);
+
+  return null;
+};
+
+const promptForShortcutTicketId = async () => {
+  // populate prompt for auto-complete from currently assigned tickets
+  const autoCompleteConfig = getConfig().createOptions.autocomplete;
+
+  if (!autoCompleteConfig) {
+    wrapLog(
+      "Autocomplete settings for create not configured - enter a ticket id or <enter> to cancel",
+      "warn"
+    );
+    return promptForDirectTicketId();
+  }
+
+  const stories = await searchStories(
+    autoCompleteConfig.query,
+    autoCompleteConfig.limit
+  );
+
+  if (stories === null) {
+    console.warn(
+      "No stories matched autocomplete criteria - enter a ticket id or <enter> to cancel"
+    );
+    return promptForDirectTicketId();
+  } else {
+    return promptForTicketIdWithAutocomplete(stories);
+  }
+};
+
 // apparantly isNaN will interpret the empty string as a valid number because the empty string is falsy,
 // and when coerced into a Number, takes on the value 0
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN#confusing_special-case_behavior
 export const createBranch = async (storyId) => {
-  if (storyId.length === 0 || isNaN(storyId)) {
-    console.error(
-      `Value (${storyId}) supplied for <story id> must be a valid integer, exiting.`
-    );
-    process.exit();
+  if (storyId === undefined) {
+    storyId = await promptForShortcutTicketId();
+
+    if (storyId === null) return;
+  } else {
+    if (storyId.length === 0 || isNaN(storyId)) {
+      console.error(
+        "Value supplied is not a valid ticket ID - expected positive integer"
+      );
+      return;
+    }
+
+    storyId = Number.parseInt(storyId, 10);
   }
 
-  storyId = Number.parseInt(storyId, 10);
+  console.log(storyId);
+  process.exit();
 
   const story = await getStory(storyId);
 

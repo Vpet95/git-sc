@@ -67,6 +67,12 @@ export const isValidURL = (urlString, protocols = ["http", "https"]) => {
   }
 };
 
+export const truncateString = (str, availableSpace) => {
+  if (!str || str.length <= availableSpace) return str;
+
+  return `${str.substr(0, availableSpace - 3)}...`;
+};
+
 export const wrapLog = (
   inputString,
   type = "log",
@@ -158,3 +164,6 @@ export const extractStoryIdFromBranchName = (branchName) => {
 
 export const underline = (str, customLength = null) =>
   `${str}\n${"-".repeat(customLength || str.length)}`;
+
+export const complete = (choices) => (str) =>
+  choices.filter((choice) => choice.indexOf(str) === 0);

@@ -3,7 +3,7 @@ import * as commander from "commander";
 
 import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
 import { getConfig } from "./config.js";
-import { initializeGitClient, getGitClient } from "./git-client.js";
+import { initializeGitClient } from "./git-client.js";
 import {
   initApp,
   createBranch,
@@ -85,7 +85,7 @@ class CommandParser {
 
     const createCommand = new commander.Command("create");
     createCommand
-      .argument("<story id>")
+      .argument("[story id]")
       .description(
         "Creates a new git branch by generating a name from the given Shortcut story denoted by <story id>"
       )

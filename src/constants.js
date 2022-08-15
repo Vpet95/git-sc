@@ -41,6 +41,11 @@ export const DEFAULT_OPTIONS = {
     branchRemote: "origin",
     createAndLinkToRemote: true,
     onBranchExists: "checkout",
+    autocomplete: {
+      query: {
+        owner: "self",
+      },
+    },
   },
   delete: {
     force: false,
@@ -63,3 +68,5 @@ export const DEFAULT_OPTIONS = {
     limit: MAX_SEARCH_RESULT_COUNT,
   },
 };
+
+export const TICKET_ID_PROMPT = "Ticket ID | <enter>: ";
