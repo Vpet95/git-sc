@@ -381,7 +381,14 @@ export const openStory = (storyId, workspace = undefined) => {
   open(openURL);
 };
 
-export const listStories = async ({ owner, type, epic, state, limit }) => {
+export const listStories = async ({
+  owner,
+  type,
+  epic,
+  workflowState,
+  completionState,
+  limit,
+}) => {
   console.time();
 
   const listOpts = getConfig().listOptions;
@@ -392,7 +399,8 @@ export const listStories = async ({ owner, type, epic, state, limit }) => {
       ...(owner ? { owner } : {}),
       ...(type ? { type } : {}),
       ...(epic ? { epic } : {}),
-      ...(state ? { state } : {}),
+      ...(workflowState ? { workflowState } : {}),
+      ...(completionState ? { completionState } : {}),
     },
     limit || listOpts.limit
   );

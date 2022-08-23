@@ -162,8 +162,12 @@ class CommandParser {
         "Limits results to only stories that belong to the given epic. Value does not need to be the full epic name."
       )
       .option(
-        "-s, --state <search text>",
-        "Limits results to only stories in the given state"
+        "--workflow-state <state>",
+        "Limits results to only stories in the given workflow state"
+      )
+      .option(
+        "--completion-state <state>",
+        "Limits results to only stories with the given completion state"
       )
       .option(
         "-l, --limit <number>",

@@ -1,6 +1,7 @@
 import https from "https";
 import { promises as fs } from "fs";
-import { existsSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
+import { inspect } from "util";
 import { isValidURL, generateURL } from "./utils.js";
 import {
   MAX_SEARCH_PAGE_SIZE,
@@ -53,6 +54,8 @@ const get = async (
   // assemble and validate a full url; final possible output looks like: https://www.somesite.com/1234?param1="abc"&param2="def"
   const fullURL = generateURL({ baseURL, resource, params });
   if (!isValidURL(fullURL)) throw new Error(`[${fullURL}] is not a valid URL`);
+
+  console.log(`fullURL: ${fullURL}`);
 
   requestCount++;
   if (requestCount > 1 && !allowConcurrent)
@@ -207,9 +210,30 @@ const generateQueryString = async (options) => {
     if (options[query]) options[query] = `\"${options[query]}\"`;
   });
 
+  // convert certain git-sc terms into Shortcut terms
+  if ("workflowState" in options) {
+    options.state = options.workflowState;
+    delete options.workflowState;
+  }
+
   return Object.keys(options)
-    .map((key) => `${key}:${options[key]}`)
-    .join(" AND ");
+    .map((key) => {
+      const inverted = options[key][0] === "!";
+
+      const keyName =
+        key === "workflowState"
+          ? "state"
+          : key === "completionState"
+          ? "is"
+          : key;
+
+      const value = inverted ? options[key].substr(1) : options[key];
+
+      // shortcut wants the inversion on the key name,
+      // whereas it's easier for users to specify it on the value in git-sc
+      return `${inverted ? "!" : ""}${keyName}:${value}`;
+    })
+    .join(" ");
 };
 
 // todo - consider what to do with search queries that could return > 1k results

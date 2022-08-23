@@ -20,7 +20,7 @@ const branchDeletionFilters = {
 };
 
 export const UNDELETABLE_BRANCHES = ["develop", "main", "master"];
-export const QUOTED_SEARCH_QUERIES = ["epic", "state"];
+export const QUOTED_SEARCH_QUERIES = ["epic", "workflowState"];
 export const MAX_SEARCH_RESULT_COUNT = 1000;
 export const MAX_SEARCH_PAGE_SIZE = 25;
 
