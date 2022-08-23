@@ -150,6 +150,10 @@ class CommandParser {
     const listCommand = new commander.Command("list");
     listCommand
       .option(
+        "-a, --archived <t | f>",
+        "Limits results to only stories that have or have not been archived"
+      )
+      .option(
         "-o, --owner <owner's mention name>",
         "The @mention name of the Shortcut user in your Workspace that owns the tickets"
       )

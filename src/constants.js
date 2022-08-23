@@ -64,6 +64,7 @@ export const DEFAULT_OPTIONS = {
   list: {
     query: {
       owner: "self",
+      archived: false,
     },
     limit: MAX_SEARCH_RESULT_COUNT,
   },

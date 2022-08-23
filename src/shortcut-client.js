@@ -218,20 +218,26 @@ const generateQueryString = async (options) => {
 
   return Object.keys(options)
     .map((key) => {
-      const inverted = options[key][0] === "!";
+      const isArchived = key === "archived";
+      const isInverted =
+        options[key][0] === "!" || (isArchived && !options[key]);
 
       const keyName =
         key === "workflowState"
           ? "state"
-          : key === "completionState"
+          : key === "completionState" || isArchived
           ? "is"
           : key;
 
-      const value = inverted ? options[key].substr(1) : options[key];
+      const value = isArchived
+        ? "archived"
+        : isInverted
+        ? options[key].substr(1)
+        : options[key];
 
       // shortcut wants the inversion on the key name,
       // whereas it's easier for users to specify it on the value in git-sc
-      return `${inverted ? "!" : ""}${keyName}:${value}`;
+      return `${isInverted ? "!" : ""}${keyName}:${value}`;
     })
     .join(" ");
 };

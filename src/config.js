@@ -52,6 +52,7 @@ const purgeSchema = Joi.object({
 
 const searchSchema = Joi.object({
   query: Joi.object({
+    archived: Joi.boolean(),
     epic: Joi.string(),
     owner: Joi.string(),
     workflowState: Joi.string(),

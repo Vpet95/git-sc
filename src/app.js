@@ -382,6 +382,7 @@ export const openStory = (storyId, workspace = undefined) => {
 };
 
 export const listStories = async ({
+  archived,
   owner,
   type,
   epic,
@@ -396,6 +397,7 @@ export const listStories = async ({
   const stories = await searchStories(
     {
       ...listOpts.query,
+      ...(archived ? { archived: archived.toLowerCase() === "t" } : {}),
       ...(owner ? { owner } : {}),
       ...(type ? { type } : {}),
       ...(epic ? { epic } : {}),
