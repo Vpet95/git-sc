@@ -3,7 +3,7 @@ import * as commander from "commander";
 
 import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
 import { getConfig } from "./config.js";
-import { initializeGitClient } from "./git-client.js";
+import { initializeGitClient } from "./git-lib/git-client.js";
 import {
   initApp,
   createBranch,

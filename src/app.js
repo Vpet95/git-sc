@@ -3,24 +3,24 @@
  * any major new features go in here
  */
 
-import { existsSync, truncate, writeFileSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
 import open from "open";
 import columnify from "columnify";
 import { getConfig } from "./config.js";
 import { UNDELETABLE_BRANCHES, TICKET_ID_PROMPT } from "./constants.js";
-import { getGitClient } from "./git-client.js";
+import { getGitClient } from "./git-lib/git-client.js";
 import {
   createNewBranch,
   findBranchesByStoryId,
   getRemoteOf,
-} from "./git-utils.js";
+} from "./git-lib/git-utils.js";
 import { generateName } from "./name-utils.js";
 import {
   getMember,
   getState,
   getStory,
   searchStories,
-} from "./shortcut-client.js";
+} from "./shortcut-lib/shortcut-client.js";
 import { groupStoriesByState, sortStoriesByState } from "./shortcut-utils.js";
 import {
   assertSuccess,

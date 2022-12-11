@@ -1,4 +1,8 @@
-import { getMembers, getState, getSelf } from "./shortcut-client.js";
+import {
+  getMembers,
+  getState,
+  getSelf,
+} from "./shortcut-lib/shortcut-client.js";
 import { stateDataFromNames } from "./shortcut-utils.js";
 
 export class Filter {

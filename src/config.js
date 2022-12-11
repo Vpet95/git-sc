@@ -9,9 +9,9 @@ import {
   MAX_SEARCH_RESULT_COUNT,
 } from "./constants.js";
 import { includesAny, wrapLog } from "./utils.js";
-import GitClient from "./git-client.js";
+import GitClient from "./git-lib/git-client.js";
 import { Filter } from "./filter.js";
-import { setShortcutAPIKey } from "./shortcut-client.js";
+import { setShortcutAPIKey } from "./shortcut-lib/shortcut-client.js";
 
 const refValidator = (value, helpers) => {
   if (GitClient.isValidRefName(value)) return value;
