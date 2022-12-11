@@ -1,13 +1,12 @@
 import https from "https";
 import { promises as fs } from "fs";
-import { existsSync, writeFileSync } from "fs";
-import { inspect } from "util";
-import { isValidURL, generateURL } from "./utils.js";
+import { existsSync } from "fs";
+import { isValidURL, generateURL } from "../utils.js";
 import {
   MAX_SEARCH_PAGE_SIZE,
   MAX_SEARCH_RESULT_COUNT,
   QUOTED_SEARCH_QUERIES,
-} from "./constants.js";
+} from "../constants.js";
 
 let API_KEY = "";
 // const MOCK_API_CALLS = process.env.MOCK;

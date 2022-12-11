@@ -3,7 +3,7 @@ import {
   getState,
   getSelf,
 } from "./shortcut-lib/shortcut-client.js";
-import { stateDataFromNames } from "./shortcut-utils.js";
+import { stateDataFromNames } from "./shortcut-lib/shortcut-utils.js";
 
 export class Filter {
   filter = null;

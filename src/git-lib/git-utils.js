@@ -1,5 +1,5 @@
 import { getGitClient } from "./git-client.js";
-import { getConfig } from "./config.js";
+import { getConfig } from "../config.js";
 
 export const createNewBranch = (newBranchName, errorHandler) => {
   const config = getConfig();

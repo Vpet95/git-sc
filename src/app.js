@@ -21,7 +21,10 @@ import {
   getStory,
   searchStories,
 } from "./shortcut-lib/shortcut-client.js";
-import { groupStoriesByState, sortStoriesByState } from "./shortcut-utils.js";
+import {
+  groupStoriesByState,
+  sortStoriesByState,
+} from "./shortcut-lib/shortcut-utils.js";
 import {
   assertSuccess,
   extractStoryIdFromBranchName,
