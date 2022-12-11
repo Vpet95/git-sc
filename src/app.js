@@ -31,12 +31,12 @@ import {
   selectionPrompt,
   underline,
   wrapLog,
-  complete,
+  completeStartsWith,
   truncateString,
 } from "./utils.js";
 
-import promptSync from "prompt-sync";
-const prompt = promptSync();
+import psp, { AutocompleteBehavior } from "prompt-sync-plus";
+const prompt = psp();
 
 const TERM_WIDTH = process.stdout.columns;
 const TICKET_WIDTH = 7;
@@ -91,16 +91,22 @@ const promptForDirectTicketId = () => {
 
 const promptForTicketIdWithAutocomplete = (stories) => {
   const resp = prompt(TICKET_ID_PROMPT, {
-    sigint: false,
-    autocomplete: complete(
-      stories.map((story) =>
-        truncateString(
-          `${story.id} - ${story.name}`,
-          process.stdout.columns -
-            (TICKET_ID_PROMPT.length + String(story.id).length + 3)
+    autocomplete: {
+      behavior: AutocompleteBehavior.SUGGEST,
+      suggestColCount: 1,
+      // this option causes a known bug in prompt-sync-plus that doesn't clear the screen and restore
+      // the cursor position properly. todo - uncomment when fixed
+      // sticky: true,
+      searchFn: completeStartsWith(
+        stories.map((story) =>
+          truncateString(
+            `${story.id} - ${story.name}`,
+            process.stdout.columns -
+              (TICKET_ID_PROMPT.length + String(story.id).length + 3)
+          )
         )
-      )
-    ),
+      ),
+    },
   });
 
   console.log(`resp: '${resp}'`);

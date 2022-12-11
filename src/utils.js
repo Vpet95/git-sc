@@ -5,8 +5,8 @@
 import { URL } from "url";
 import wordwrap from "wordwrapjs";
 
-import promptSync from "prompt-sync";
-const prompt = promptSync();
+import psp from "prompt-sync-plus";
+const prompt = psp();
 
 export const includesAny = (source, ...values) => {
   if (!source) return false;
@@ -165,5 +165,8 @@ export const extractStoryIdFromBranchName = (branchName) => {
 export const underline = (str, customLength = null) =>
   `${str}\n${"-".repeat(customLength || str.length)}`;
 
-export const complete = (choices) => (str) =>
-  choices.filter((choice) => choice.indexOf(str) === 0);
+export const completeStartsWith = (choices) => (enteredString) =>
+  choices.filter((choice) => choice.indexOf(enteredString) === 0);
+
+export const completeContains = (choices) => (enteredString) =>
+  choices.filter((choice) => choice.includes(enteredString));
