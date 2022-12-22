@@ -54,8 +54,6 @@ const get = async (
   const fullURL = generateURL({ baseURL, resource, params });
   if (!isValidURL(fullURL)) throw new Error(`[${fullURL}] is not a valid URL`);
 
-  console.log(`fullURL: ${fullURL}`);
-
   requestCount++;
   if (requestCount > 1 && !allowConcurrent)
     throw new Error(

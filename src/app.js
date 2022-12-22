@@ -94,9 +94,7 @@ const promptForTicketIdWithAutocomplete = (stories) => {
     autocomplete: {
       behavior: AutocompleteBehavior.SUGGEST,
       suggestColCount: 1,
-      // this option causes a known bug in prompt-sync-plus that doesn't clear the screen and restore
-      // the cursor position properly. todo - uncomment when fixed
-      // sticky: true,
+      sticky: true,
       searchFn: completeStartsWith(
         stories.map((story) =>
           truncateString(
@@ -109,9 +107,14 @@ const promptForTicketIdWithAutocomplete = (stories) => {
     },
   });
 
-  console.log(`resp: '${resp}'`);
+  const ticketId = parseInt(resp);
 
-  return null;
+  if (Number.isNaN(ticketId)) {
+    console.warn(`Invalid Shortcut ticket id '${resp}'`);
+    return null;
+  }
+
+  return ticketId;
 };
 
 const promptForShortcutTicketId = async () => {
@@ -126,6 +129,7 @@ const promptForShortcutTicketId = async () => {
     return promptForDirectTicketId();
   }
 
+  console.log("Searching Shortcut stories...");
   const stories = await searchStories(
     autoCompleteConfig.query,
     autoCompleteConfig.limit
@@ -159,9 +163,6 @@ export const createBranch = async (storyId) => {
 
     storyId = Number.parseInt(storyId, 10);
   }
-
-  console.log(storyId);
-  process.exit();
 
   const story = await getStory(storyId);
 

@@ -5,12 +5,13 @@ export const createNewBranch = (newBranchName, errorHandler) => {
   const config = getConfig();
   const git = getGitClient();
 
-  git.checkout(
-    { branchName: config.commonOptions.primaryBranch },
-    errorHandler
-  );
+  const primaryBranch = config.commonOptions.primaryBranch;
 
-  if (config.createOptions.pullLatest)
+  console.log(`Checking out ${primaryBranch}`);
+  git.checkout({ branchName: primaryBranch }, errorHandler);
+
+  if (config.createOptions.pullLatest) {
+    console.log("Pulling latest changes...");
     git.pull(
       {
         remoteName: config.commonOptions.primaryBranchRemote,
@@ -18,7 +19,9 @@ export const createNewBranch = (newBranchName, errorHandler) => {
       },
       errorHandler
     );
+  }
 
+  console.log(`Creating branch '${newBranchName}'`);
   const result = git.checkout({
     branchName: newBranchName,
     create: true,
@@ -61,7 +64,10 @@ export const createNewBranch = (newBranchName, errorHandler) => {
     }
   }
 
-  if (config.createOptions.createLinkToRemote)
+  if (config.createOptions.createLinkToRemote) {
+    console.log(
+      `Setting up to track remote branch '${config.createOptions.branchRemote}/${newBranchName}'`
+    );
     git.track(
       {
         remoteName: config.createOptions.branchRemote,
@@ -69,6 +75,7 @@ export const createNewBranch = (newBranchName, errorHandler) => {
       },
       errorHandler
     );
+  }
 };
 
 // I'd rather have the caller decide what to do if multiple branches are contain the same story id
