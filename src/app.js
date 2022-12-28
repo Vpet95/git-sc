@@ -267,19 +267,23 @@ export const storyIdToBranchName = (storyId) => {
     console.error("Error: could not find current branch name");
     process.exit();
   } else if (Array.isArray(branchName)) {
-    if (branchName.length > 1) {
-      console.log(
-        `Multiple branches contain the story id ${storyId}; select one, or hit enter to cancel`
-      );
-      branchName = selectionPrompt(branchName);
+    switch (branchName.length) {
+      case 0:
+        branchName = undefined;
+        break;
+      case 1:
+        branchName = branchName[0];
+        break;
+      default:
+        console.log(
+          `Multiple branches contain the story id ${storyId}; select one, or hit enter to cancel`
+        );
+        branchName = selectionPrompt(branchName);
 
-      if (!branchName) {
-        console.log("Ok, canceled");
-        process.exit();
-      }
-    } else {
-      // grab the only branch name available
-      branchName = branchName[0];
+        if (!branchName) {
+          console.log("Ok, canceled");
+          process.exit();
+        }
     }
   }
 
@@ -293,6 +297,11 @@ export const deleteBranch = async (
   force,
   overrideOptions
 ) => {
+  if (branchName === undefined) {
+    console.warn(`No branches contain the story id ${storyId}`);
+    return false;
+  }
+
   const config = getConfig();
   const git = getGitClient();
   const options = overrideOptions || config.deleteOptions;

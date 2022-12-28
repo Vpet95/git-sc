@@ -52,7 +52,7 @@ to run with reasonable defaults, if possible.`
         if ("debug" in program.opts())
           this.config.setDebug(program.opts().debug);
         if ("verbose" in program.opts())
-          this.config.setVerbose(program.opts().debug);
+          this.config.setVerbose(program.opts().verbose);
 
         const name = actionCommand.name();
         this.config.currentCommand = name;
