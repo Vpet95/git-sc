@@ -119,31 +119,50 @@ Each character typed filters the suggested tickets down until one remaining sugg
 
 ### Deleting a Branch
 
-git-sc allows you to delete local and remote branches by specifying the Shortcut ticket id associated with the branch. The syntax follows:
+The `git-sc delete` commands allows you to delete local git branches based on the desired Shortcut ticket state and/or ownership. The syntax follows:
 
 ```
-git-sc delete [ticket id]
+git-sc delete [options] [story id]
 ```
 
-You can omit the ticket id and git-sc will attempt to delete the current branch. Note that the branch must have the related shortcut ticket id in its name for this command to work - e.g. if you used git-sc to generate the branch name in the first place.
+Where `options` can be any of:
 
-git-sc will refuse to delete branches named `develop`, `main`, or `master` as these typically denote the root/trunk branches of a given repo. You can skip through this check with the `--force` option (see below).
+- `-f` or `--force` - bypasses all prompting and Shortcut story checking (default: `false`)
+- `-r` or `--remote` - tells git-sc to delete the remote branch too (default: `false`)
 
-By default, git-sc will do some additional safety checks and prompting to make sure only the intended branch gets deleted. This is skippable and configurable.
+Omitting the `story id` results in git-sc attempting to delete the currently checked out branch.
 
-Since deletion happens by ticket id and not direct branch name, git-sc will also check to see if the supplied story id maps to multiple possible branch names and prompt for a selection from the user.
+Supplying `story id` allows git-sc to validate the branch's Shortcut story state and ownership prior to attempting a delete. To do so, branches must have an identifiable Shortcut ticket id in their name (which is always the case for branches generated with git-sc) - otherwise the validation is skipped (an 'are you sure?' prompt will still show).
 
-#### Force deleting
+By default, git-sc refuses to delete branches named `develop`, `main`, or `master` as these typically denote the root/trunk branches of a given repo.
 
-To skip safety checks and prompting, provide the command with the `--force` (or `-f`) option as in:
+If multiple branch names contain the same story id, an additional selection prompt is shown.
 
 ```
-git-sc delete 12345 --force
+> git-sc --verbose delete 12345
+Multiple branches contain the story id 12345; select one, or hit enter to cancel
+1: sc12345/a-third-branch-name-here-in-order-to-clash
+2: sc12345/another-branch-name-here
+3: sc12345/a-branch-name
+4: sc12345/the-last-branch-name-here
+# | <enter>: 3
+Delete branch 'sc12345/a-branch-name'
+ > Associated with ticket 'Some Shortcut ticket title here'
+ > In work state: In Development
+ > Assigned to: Jane Doe
+y/[n]? y
+Deleting local branch sc12345/a-branch-name...
 ```
 
-NOTE: in addition to skipping Shortcut-related checks, the `--force` option will also ignore uncommitted changes and reset them, and perform the unsafe `-D` delete. Only use this option if you know what you're doing.
+#### Force
 
-Duplicate branch name checking and prompting will not be skipped.
+Only use this option if you know what you're doing. `--force` will:
+
+- Skip 'special branch' name checks
+- Skip Shortcut ticket state and ownership validation
+- Skip uncommitted changes checking
+- Bypass prompts (except the 'multiple branches found' prompt)
+- Runs the `git branch -D` command to force deletion
 
 #### Delete remote branches
 

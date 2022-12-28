@@ -65,7 +65,7 @@ export const createNewBranch = (newBranchName, errorHandler) => {
     }
   }
 
-  if (config.createOptions.createLinkToRemote) {
+  if (config.createOptions.createAndLinkToRemote) {
     console.log(
       `Setting up to track remote branch '${config.createOptions.branchRemote}/${newBranchName}'`
     );

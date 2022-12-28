@@ -88,12 +88,9 @@ export default class GitClient {
 
     const parsed = output.substring(start, end);
 
-    result.remoteBranchName = parsed.substring(
-      parsed.indexOf("/") + 1,
-      parsed.length
-    );
-
-    result.remote = parsed.substring(0, parsed.indexOf("/"));
+    const slashIndex = parsed.indexOf("/");
+    result.remoteBranchName = parsed.substring(slashIndex + 1, end);
+    result.remoteName = parsed.substring(0, slashIndex);
 
     return result;
   }
