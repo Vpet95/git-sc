@@ -1,8 +1,14 @@
 ![git-sc logo](./logos/git-sc%20logo%20A.jpeg)
 
-✨ git-sc ✨ is a tool to help you quickly and easily integrate your [git](https://git-scm.com/) and [Shortcut](https://shortcut.com/) workflows so you never have to leave your terminal.
+✨ git-sc ✨ is a tool that integrates your [git](https://git-scm.com/) and [Shortcut](https://shortcut.com/) workflows so you never have to leave your terminal.
 
-Note - this is still early in development and bound to contain non-backwards-compatible changes in the future.
+This tool allows you to:
+
+- Reduce jarring back-and-forth movement between your terminal and browser to reference Shortcut tickets or backlog information
+- Reduce reliance on your mouse to copy and paste ticket ids or details when creating a new branch
+- Automatically format all generated branch names to your organization's specific naming schema, because Naming Things is Hard(TM)
+- Automatically clean up your local and remote branch lists based on the status of your Shortcut tickets
+- Search Shortcut tickets without leaving your terminal based on pre-configured filters
 
 ## Installation
 
@@ -16,7 +22,7 @@ Alternatively, you can run git-sc directly via [npx](https://www.npmjs.com/packa
 
 ## Prerequisites
 
-git-sc requires a Shortcut API token to run - please read [the official help article](https://help.shortcut.com/hc/en-us/articles/205701199-Shortcut-API-Tokens) on generating your own Shortcut API token for more info.
+git-sc requires that you have a Shortcut API token - please read [the official help article](https://help.shortcut.com/hc/en-us/articles/205701199-Shortcut-API-Tokens) on generating your own Shortcut API token for more info.
 
 ## Usage
 
@@ -26,55 +32,90 @@ Call git-sc with `--help` to see full usage:
 Options:
   -V, --version                output the version number
   --debug                      Determines whether git-sc outputs status and debug messages to the console
-  -c, --config <file>          Path to a JSON configuration file containing git-sc program options.
-                                 If omitted, git-sc will look for a file named `gitscconf.json` in the
-                               current directory,         then in the home directory. If no such
-                               configuration files are found, git-sc will attempt         to run with
-                               reasonable defaults, if possible.
+  -c, --config <file>          Path to a JSON configuration file containing git-sc program options.         If omitted, git-sc will
+                               look for a file named `gitscconf.json` in the current directory,         then in the home directory.
+                               If no such configuration files are found, git-sc will attempt         to run with reasonable
+                               defaults, if possible.
+  -v, --verbose                Determines whether commands output more verbose information while processing or prompting
   -h, --help                   display help for command
 
 Commands:
   init [options] [file name]   Generates a template JSON configuration file for git-sc
-  create <story id>            Creates a new git branch by generating a name from the given Shortcut
-                               story denoted by <story id>
-  delete [options] [story id]  Deletes a git branch pertaining to the given shortcut story - checking
-                               first if the story is in a 'done' state. If <story id> is omitted,
-                               attempts to delete the currently checkecd out branch.
+  create [story id]            Creates a new git branch by generating a name from the given Shortcut story denoted by <story id>
+  delete [options] [story id]  Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a
+                               'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch.
+  clean [options]              Systematically scans and deletes local branches that pass configured filters
   open [options] <story id>    Opens the given Shortcut story in the default web browser
+  list [options]               Lists Shortcut tickets by some configurable range. Defaults to tickets assigned to you.
   help [command]               display help for command
 ```
 
-### Initializing
+### Configuration
 
-Running git-sc for the first time, it may be helpful to tell the tool to initialize a new JSON configuration file for you:
-
-```
-> git-sc init
-Initialized git-sc configuration file in /path/to/your/file/gitscconf.json
-```
-
-This will create a new JSON file in your current directory. Alternatively, you can specify your own file location and name:
+git-sc relies on a JSON configuration file that specifes things like Shortcut ticket search criteria, git branch purge criteria, new branch name formatting options, and more. To generate an empty config file, run:
 
 ```
-> git-sc init /fancy/path/to/my/custom-file-name.json
-Initialized git-sc configuration file in /fancy/path/to/my/custom-file-name.json
+git-sc init [file name]
 ```
 
-If you choose to specify a custom file name, you will need to specify it again later when you interact with git-sc via commandline, since git-sc will look for files named `gitscconf.json` by default.
+This creates a file named `gitscconf.json` in your current directory with some fields pre-filled with reasonable defaults. Other fields are pre-filled with instructions to help you configure them. This is a special/reserved file name, but any file name or location can be tacked on to the `init` command.
+
+If you deviate from this pattern, you will need to specify the location and name in later commands with the `-c` option:
+
+```
+git-sc -c path/to/your/config/file.json <some command>
+```
+
+Next, configure the `common` section of this generated file - this section contains fields for info git-sc will need to know to perform many of its actions, including:
+
+- `shortcutApiKey` - your Shortcut api key
+- `localGitDirectory` - the directory of your local git repository (you can run git-sc from anywhere as long as this is pointing to the right place)
+- `primaryBranch` - this designates the common parent branch for all branch creations done by git-sc. For many, this will be `develop`, `master`, or `main`.
+- `primaryBranchRemote` - the git remote pertaining to the primary branch, typically `origin`
+- `shortcutWorkspace` - the name of your Shortcut worksapce
 
 ### Creating a Branch
 
-git-sc will create a local branch for you based on the Shortcut story specified via its story id:
+The `git-sc create` command allows the user to create local git branches from existing Shortcut tickets and has the following syntax:
 
 ```
-git-sc create <story-id>
+git-sc create [ticket id]
 ```
 
-By default git-sc will generate branch names following this scheme:
+The simplest use of this command involves passing in the Shortcut ticket id:
 
-`<prefix><story id>/<hyphenated keywords>`
+```
+> git-sc create 12345
+Checking out develop
+Pulling latest changes...
+Creating branch 'sc12345/some-branch-name-based-on-ticket'
+```
 
-You can configure the branch prefix with the `branchPrefix` field in the configuration JSON - it currently defaults to 'sc' for 'Shortcut'. It may also be helpful to configure a limit on the number of words that can appear in the hyphenated keyword list for stories with particularly long titles. To do so, set a limit via the `branchKeywordCountLimit` field.
+Alternatively, you can run `git-sc create` without any arguments, which will launch an interactive mode. In this mode, git-sc will search Shortcut for tickets based on your configured search filters and recommend tickets as you type:
+
+```
+> git-sc create
+Searching Shortcut stories...
+Ticket ID | <enter>: 12
+  12345 - Some pretty awesome ticket name here
+  12346 - Another cool ticket name here
+  12366 - A particularly long and tedious ticket name that is cut short...
+  12555 - Final ticket that can display on this screen
+  45 more...
+```
+
+Each character typed filters the suggested tickets down until one remaining suggestion, then the rest of the input is filled in. The `create` command is configured within the `create` field of the JSON configuration file, and contains the following fields:
+
+- `pullLatest` - determines whether the `primaryBranch` should be updated prior to creating the new branch
+- `branchPrefix` - determines a prefix string of characters to prepend to the generated branch name, defaults to "sc"
+- `branchKeywordCountLimit` - determines the maximum number of individual words that can appear in generated branch names, defaults to 10
+- `branchRemote` - determines the git remote for the branch being created, defaults to "origin"
+- `createAndLinkToRemote` - determines whether git-sc should also create the remote branch with the same name, and set the local branch to track the remote, defaults to `true`
+- `onBranchExists` - determines how to respond to existing branches, valid values include:
+  - `"abort"` - warn the user the branch already exists, and do nothing
+  - `"checkout"` - warn the user the branch already exists, and check it out (**this is the default behavior**)
+  - `"overwrite"` - delete existing branch and create a new one with the same name
+- `autocomplete` - determines the Shortcut search criteria used to generate list of autocomplete suggestions. See [Searching Shortcut]() for specific configuration options
 
 ### Deleting a Branch
 

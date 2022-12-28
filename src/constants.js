@@ -34,10 +34,8 @@ export const DEFAULT_OPTIONS = {
   },
   create: {
     pullLatest: true,
-    topicTaggingApiKey: "",
-    rapidApiHost: "",
     branchPrefix: "sc",
-    branchKeywordCountLimit: 5,
+    branchKeywordCountLimit: 10,
     branchRemote: "origin",
     createAndLinkToRemote: true,
     onBranchExists: "checkout",

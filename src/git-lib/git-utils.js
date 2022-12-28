@@ -27,6 +27,7 @@ export const createNewBranch = (newBranchName, errorHandler) => {
     create: true,
   });
 
+  // todo - replace string literals with consts
   if (!result.success) {
     if (result.output.includes("already exists")) {
       switch (config.createOptions.onBranchExists) {

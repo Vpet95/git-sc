@@ -277,6 +277,9 @@ export const storyIdToBranchName = (storyId) => {
         console.log("Ok, canceled");
         process.exit();
       }
+    } else {
+      // grab the only branch name available
+      branchName = branchName[0];
     }
   }
 

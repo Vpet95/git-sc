@@ -28,19 +28,19 @@ class CommandParser {
     program
       .name("git-sc")
       .description(
-        "A tool that blends your git and Shortcut workflows so you don't need to leave the terminal"
+        "A tool that blends integrates git and Shortcut workflows so you never have to leave the terminal"
       )
-      .version("1.0.4")
+      .version("1.0.0")
       .option(
         "--debug",
         "Determines whether git-sc outputs status and debug messages to the console"
       )
       .option(
         "-c, --config <file>",
-        "Path to a JSON configuration file containing git-sc program options. \
-        If omitted, git-sc will look for a file named `gitscconf.json` in the current directory, \
-        then in the home directory. If no such configuration files are found, git-sc will attempt \
-        to run with reasonable defaults, if possible."
+        `Path to a JSON configuration file containing git-sc program options.
+If omitted, git-sc will look for a file named 'gitscconf.json' in the current directory,
+then in the home directory. If no such configuration files are found, git-sc will attempt
+to run with reasonable defaults, if possible.`
       )
       .option(
         "-v, --verbose",
@@ -107,7 +107,7 @@ class CommandParser {
         false
       )
       .description(
-        "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checkecd out branch."
+        "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checked out branch."
       )
       .action((storyId, options, __) => {
         const branchName = storyIdToBranchName(storyId);
