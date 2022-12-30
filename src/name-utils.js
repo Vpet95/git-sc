@@ -69,10 +69,11 @@ export const filterAndTransform = (name, limit) => {
 
   if (!name.length) return name;
 
+  // consider also filtering out adverbs
   const newName = name
-    .split(" ")
+    .split(/\s/)
     .map((word) => word.toLowerCase().replace(/[^a-zA-Z ]/g, ""))
-    .filter((word) => !skipWords.includes(word))
+    .filter((word) => word.length > 0 && !skipWords.includes(word))
     .slice(0, limit ? limit : Number.POSITIVE_INFINITY)
     .join("-");
 
