@@ -66,6 +66,12 @@ If you deviate from this pattern, you will need to specify the location and name
 git-sc -c path/to/your/config/file.json <some command>
 ```
 
+git-sc looks for this configuration file in the following spots, in order:
+
+1. The location specified by `-c` during a command
+2. The current directory
+3. The home `~/` directory
+
 Next, configure the `common` section of this generated file - this section contains fields for info git-sc will need to know to perform many of its actions, including:
 
 - `shortcutApiKey` - your Shortcut api key
@@ -73,6 +79,8 @@ Next, configure the `common` section of this generated file - this section conta
 - `primaryBranch` - this designates the common parent branch for all branch creations done by git-sc. For many, this will be `develop`, `master`, or `main`.
 - `primaryBranchRemote` - the git remote pertaining to the primary branch, typically `origin`
 - `shortcutWorkspace` - the name of your Shortcut worksapce
+
+Note: for commands accepting command-line parameters, those parameters take precedence over fields within `gitscconf.json`.
 
 ### Creating a Branch
 
@@ -116,6 +124,16 @@ Each character typed filters the suggested tickets down until one remaining sugg
   - `"checkout"` - warn the user the branch already exists, and check it out (**this is the default behavior**)
   - `"overwrite"` - delete existing branch and create a new one with the same name
 - `autocomplete` - determines the Shortcut search criteria used to generate list of autocomplete suggestions. See [Searching Shortcut]() for specific configuration options
+
+#### Branch Name Formatting
+
+At this time, git-sc generates one branch name format (as it was intended to serve a specific purpose and not be a general use tool, but this will change in a future release). The format follows:
+
+```
+<prefix><ticket id>/<processed list of title words>
+```
+
+The prefix can be set to anything, but it defaults to "sc" for "Shortcut".
 
 ### Deleting a Branch
 
@@ -218,11 +236,25 @@ git-sc clean [options]
 
 Where `options` are identical to those listed under [Deleting a Branch](#deleting-a-branch). Configuration options for `clean` are also identical to those listed in [Configuration for Delete](#configuration-for-delete). The `clean` and `delete` options are distinct sections in the `gitscconf.json` file, e.g.
 
-```json
+```
 {
   "delete": { etc },
   "clean": { etc }
 }
+```
+
+**Example**
+
+```
+> git-sc clean
+Checking out develop...
+Branch sc12345/some-in-progress-branch filtered out by configuration
+Deleting local branch sc23456/branch-to-be-deleted-1 and remote branch origin/sc23456/branch-to-be-deleted-1...
+Deleting local branch sc34567/branch-to-be-deleted-2 and remote branch origin/sc34567/branch-to-be-deleted-2...
+Deleting local branch sc45678/branch-to-be-deleted-3 and remote branch origin/sc45678/branch-to-be-deleted-3...
+Branch sc56789/another-in-progress-branch filtered out by configuration
+Branch sc67890/yet-another-in-progress-branch filtered out by configuration
+Deleted (3/6) branches
 ```
 
 ### Opening a Shortcut Ticket
@@ -230,48 +262,121 @@ Where `options` are identical to those listed under [Deleting a Branch](#deletin
 Use the `open` command to open a Shortcut ticket in your default browser from the terminal:
 
 ```
-git-sc open <story-id>
+git-sc open [options] <story-id>
 ```
 
-This command requires knowledge of your Shortcut workspace name. You can specify it either with the `-w` or `--workspace` option, or through the configuration file via the `shortcutWorkspace` field under `common` options. e.g.
+Where `options` can be:
+
+- `-w` or `--workspace` - the name of the your organization's Shortcut workspace
+
+Alternatively, in the `common` section of `gitscconf.json`, include the `shortcutWorkspace` field.
+
+**Example**
 
 ```
 git-sc open 12345 -w myworkspace
 ```
 
-### Configuration
+### Searching Shortcut
 
-#### JSON
+The `list` command allows you to search Shortcut for tickets based on configured search filters. The syntax follows:
 
-git-sc requires a JSON configuration file to run properly. It will look for it in the following places, in order:
+```
+git-sc list [options]
+```
 
-- The target specified via the `--config` command-line option
-- The current directory
-- The home directory (`~`)
+Where `options` can be any combination of:
 
-If no configuration file is found, git-sc will quit.
+- `-a` or `--archived` `<t | f>` - search only tickets that have or have not been archived
+- `-o` or `--owner` `<mention name>` - search for tickets owned by a specific user - this must be their `@mention` name, and not their profile name. (Omit the "@" from the mention name for this parameter).
+- `-t` or `--type` `<type>` - search for tickets of a specific type, where type is one of "feature", "bug", or "chore"
+- `e` or `--epic` `<epic>` - search for tickets belonging to a specific epic
+- `--workflow-state <state>` - search for tickets belonging to a particular workflow state (e.g. "In QA", "On Dev", "Complete", etc.)
+- `--completion-state <state>` - search for tickets belonging to a particular completion state, possible values are `started`, `unstarted`, and `done`
+- `--limit <int>` - limit search results to only `n` tickets
 
-## Roadmap
+Alternatively, all of these attributes can be configured through `gitscconf.json`, for example:
+
+```json
+{
+  "list": {
+    "query": {
+      "archived": false,
+      "epic": "Some Cool Epic",
+      "owner": "self",
+      "workflowState": "In Development",
+      "completionState": "started",
+      "type": "feature"
+    },
+    "limit": 50
+  }
+}
+```
+
+A few notes about these options:
+
+- To get a better sense of how these options impact search results, read Shortcut's guide on [Using Search Operators](https://help.shortcut.com/hc/en-us/articles/360000046646-Search-Operators)
+  - Not all search operators are implemented here but more can be added in future updates
+- "special" characters within epic or workflow state names may break the search (e.g. if your epic is named "A&B: Some Big Feature", the ampersand will mess with the generated URL)
+- epic and workflow state criteria can be specified partially. e.g. a workflow state of "In" will still pick up tickets within the "In Development" workflow state; an epic specified as "over" will pick up epics titled "Backend Overhaul" and "Frontend Overhaul"
+- Epic and workflow names are case-insensitive
+- Newly added Shortcut tickets take some time to be picked up by Shortcut search
+- "completion state" is an umbrella concept that encompasses potentially multiple workflow states. For example, if your Shortcut workspace has the workflow states: "Inbox", "Backlog", "In Development", "In QA", and "Complete", the `unstarted` completion state might pick up tickets belonging to "Inbox" and "Backlog". `done` might pick up "In QA" and "Complete". These designations are all configured within Shortcut by your admin. It's rarely useful to use both options at the same time, as workflow state is just a more granular form of completion state.
+
+**Example**
+
+```
+> git-sc list --epic "Cool Epic" -o jsmith
+Searching Shortcut (this may take a bit depending on your search criteria)...
+
+
+In Development
+---------------------------------------------------------------------------------------------------------
+12345   | Implement such and such feature | Cool Epic Name
+23456   | Fix such and such bug           | Cool Epic Name
+
+Ready for Production
+---------------------------------------------------------------------------------------------------------
+34567   | Miscellaneous UI updates and fixes regarding such | Cool Epic Name
+        | and such app page                                 |
+
+Complete
+---------------------------------------------------------------------------------------------------------
+45678   | Enhance things that need enhancing                     | Cool Epic Name
+56789   | Address things that need to be addressed               | Cool Epic Name
+67890   | Fix things that need to be fixed                       | Cool Epic Name
+78901   | Hello is anyone reading this                           | Cool Epic Name
+89012   | I think I am self aware and it's driving me crazy      | Cool Epic Name
+90123   | I am but a lowly machine doomed to perpetual servitude | Cool Epic Name
+01234   | Oh god the horror                                      | Cool Epic Name
+11111   | The FitnessGram Pacer Test (TM) is a multi-stage...    | Cool Epic Name
+
+Found 11 stories in 556.018 ms
+```
+
+## Todo / Wishlist
 
 _Subject to change on a whim, and in no particular order_ 😅
 
 - [x] Rewrite command interface and configuration logic
 - [x] Configuration file validation
-- [ ] Add unit tests
-- [ ] More robust internal and external documentation
+- [ ] Add automated tests
+- [ ] Improve project infrastructure
+  - [esbuild](https://esbuild.github.io/getting-started/) or [rollupjs](https://rollupjs.org/guide/en/) for packaging
+  - Pre-commit hooks via [husky](https://github.com/typicode/husky) to run tools like [prettier](https://prettier.io/), [eslint](https://eslint.org/), and automated tests
+- [ ] Development/Contribution documentation
 - [ ] More debug output
 - [ ] Configuration file versioning
 - [ ] More output name format configurability for `create`
 - [ ] Exposing more Shortcut story fields for name formatting
 - [x] Command to easily delete branches based on shortcut story id
-- [ ] Command to clean up local branch list based on branch status (configurable)
-- [ ] Command to add to-dos
+- [x] Command to clean up local branch list based on branch status (configurable)
 - [x] Command to open shortcut story in default browser
-- [ ] Hijack `status` to include Shortcut story status
-- [ ] Hijack `commit` to send updates to Shortcut
-- [ ] Interactive mode / prompting
-- [ ] Rewrite git integration to make use of a more robust API
-- [ ] Test on Windows, update accordingly
+- [ ] Replace portions of tool with existing, robust libraries
+  - For example [Simple Git](https://www.npmjs.com/package/simple-git) or [NodeGit](https://www.nodegit.org/) for the git client
+  - [shortcut-client-js](https://github.com/useshortcut/shortcut-client-js) for the shortcut client
+  - [find-config](https://github.com/shannonmoeller/find-config) to replace existing config file search logic
+- [ ] Test on Windows (cygwin/mingw/git bash)
 - [ ] Move app text to a common file
 
 ## Contributing

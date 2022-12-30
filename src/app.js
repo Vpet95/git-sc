@@ -33,6 +33,7 @@ import {
   wrapLog,
   completeStartsWith,
   truncateString,
+  Time,
 } from "./utils.js";
 
 import psp, { AutocompleteBehavior } from "prompt-sync-plus";
@@ -412,10 +413,12 @@ export const listStories = async ({
   completionState,
   limit,
 }) => {
-  console.time();
-
   const listOpts = getConfig().listOptions;
 
+  console.log(
+    `Searching Shortcut (this may take a bit depending on your search criteria)...`
+  );
+  const searchTime = new Time();
   const stories = await searchStories(
     {
       ...listOpts.query,
@@ -454,5 +457,6 @@ export const listStories = async ({
     console.log(underline(key, process.stdout.columns - 1));
     console.log(`${columns}\n`);
   });
-  console.timeEnd();
+
+  console.log(`Found ${stories.length} stories in ${searchTime.end()}`);
 };

@@ -170,3 +170,15 @@ export const completeStartsWith = (choices) => (enteredString) =>
 
 export const completeContains = (choices) => (enteredString) =>
   choices.filter((choice) => choice.includes(enteredString));
+
+// credit to @code for https://stackoverflow.com/a/74514157/3578493
+export class Time {
+  constructor() {
+    this.time = performance.now();
+  }
+
+  end() {
+    // round number to lower decimal precision, like console.time()
+    return `${(performance.now() - this.time).toFixed(3)} ms`;
+  }
+}
