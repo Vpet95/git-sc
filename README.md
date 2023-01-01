@@ -359,31 +359,6 @@ Complete
 Found 11 stories in 556.018 ms
 ```
 
-## Todo / Wishlist
-
-_Subject to change on a whim, and in no particular order_ 😅
-
-- [x] Rewrite command interface and configuration logic
-- [x] Configuration file validation
-- [ ] Add automated tests
-- [ ] Improve project infrastructure
-  - [esbuild](https://esbuild.github.io/getting-started/) or [rollupjs](https://rollupjs.org/guide/en/) for packaging
-  - Pre-commit hooks via [husky](https://github.com/typicode/husky) to run tools like [prettier](https://prettier.io/), [eslint](https://eslint.org/), and automated tests
-- [ ] Development/Contribution documentation
-- [ ] More debug output
-- [ ] Configuration file versioning
-- [ ] More output name format configurability for `create`
-- [ ] Exposing more Shortcut story fields for name formatting
-- [x] Command to easily delete branches based on shortcut story id
-- [x] Command to clean up local branch list based on branch status (configurable)
-- [x] Command to open shortcut story in default browser
-- [ ] Replace portions of tool with existing, robust libraries
-  - For example [Simple Git](https://www.npmjs.com/package/simple-git) or [NodeGit](https://www.nodegit.org/) for the git client
-  - [shortcut-client-js](https://github.com/useshortcut/shortcut-client-js) for the shortcut client
-  - [find-config](https://github.com/shannonmoeller/find-config) to replace existing config file search logic
-- [ ] Test on Windows (cygwin/mingw/git bash)
-- [ ] Move app text to a common file
-
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
