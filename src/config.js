@@ -64,6 +64,11 @@ const searchSchema = Joi.object({
 
 // we're allowing unknown fields because they shouldn't disrupt our logic
 const optionsSchema = Joi.object({
+  meta: Joi.object({
+    version: Joi.string()
+      .pattern(/\d+\.\d+\.\d+/)
+      .required(),
+  }).required(),
   common: Joi.object({
     shortcutApiKey: Joi.string().required(),
     // best we can do, really https://stackoverflow.com/a/537833/3578493

@@ -1,3 +1,4 @@
+export const PROGRAM_VERSION = "1.0.0";
 export const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 export const DEFAULT_CONFIG_LOCATIONS = ["./", "~/"];
 
@@ -25,6 +26,9 @@ export const MAX_SEARCH_RESULT_COUNT = 1000;
 export const MAX_SEARCH_PAGE_SIZE = 25;
 
 export const DEFAULT_OPTIONS = {
+  meta: {
+    version: PROGRAM_VERSION,
+  },
   common: {
     shortcutApiKey: "",
     localGitDirectory: process.cwd(),

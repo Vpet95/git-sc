@@ -1,7 +1,7 @@
 import { resolve } from "path";
 import * as commander from "commander";
 
-import { DEFAULT_CONFIG_FILENAME } from "./constants.js";
+import { DEFAULT_CONFIG_FILENAME, PROGRAM_VERSION } from "./constants.js";
 import { getConfig } from "./config.js";
 import { initializeGitClient } from "./git-lib/git-client.js";
 import {
@@ -30,7 +30,7 @@ class CommandParser {
       .description(
         "A tool that blends integrates git and Shortcut workflows so you never have to leave the terminal"
       )
-      .version("1.0.0")
+      .version(PROGRAM_VERSION)
       .option(
         "--debug",
         "Determines whether git-sc outputs status and debug messages to the console"
@@ -64,6 +64,9 @@ to run with reasonable defaults, if possible.`
             this.config.commonOptions.localGitDirectory,
             this.config.debug
           );
+
+          /* this might be a good place to parse and check config file version number 
+             at this time, it's not needed */
         }
       });
 
