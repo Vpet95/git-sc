@@ -7,7 +7,13 @@ import { existsSync, writeFileSync } from "fs";
 import open from "open";
 import columnify from "columnify";
 import { getConfig } from "./config.js";
-import { UNDELETABLE_BRANCHES, TICKET_ID_PROMPT } from "./constants.js";
+import {
+  UNDELETABLE_BRANCHES,
+  TICKET_ID_PROMPT,
+  NOTFOUND_ABORT,
+  NOTFOUND_DELETE,
+  NOTFOUND_SKIP,
+} from "./constants.js";
 import { getGitClient } from "./git-lib/git-client.js";
 import {
   createNewBranch,
@@ -170,6 +176,24 @@ export const createBranch = async (storyId) => {
   createNewBranch(generateName(storyId, story.name), assertSuccess);
 };
 
+function handleTicketNotFound(onTicketNotFound, storyId) {
+  const commonCopy = `Could not find story #${storyId} on Shortcut,`;
+  switch (onTicketNotFound) {
+    case "abort":
+      console.warn(`${commonCopy} aborting`);
+      return NOTFOUND_ABORT;
+    case "delete":
+      wrapLog(
+        `${commonCopy} proceeding with branch deletion due to configured 'onStoryNotFound' value`,
+        "warn"
+      );
+      return NOTFOUND_DELETE;
+    case "skip":
+      console.warn(`${commonCopy} skipping current branch deletion`);
+      return NOTFOUND_SKIP;
+  }
+}
+
 // first determine if it's even possible to delete the branch given current settings
 // then, prompt
 async function validateDeleteConditionsAndPrompt(
@@ -212,18 +236,31 @@ async function validateDeleteConditionsAndPrompt(
   }
 
   if (storyId !== undefined) {
-    story = await getStory(
-      parseInt(storyId, 10),
-      config.currentCommand === "clean" // clean will most likely be calling getStory on a bunch of different stories at once
-    );
+    try {
+      story = await getStory(
+        parseInt(storyId, 10),
+        config.currentCommand === "clean" // clean will most likely be calling getStory on a bunch of different stories at once
+      );
 
-    if (
-      !(await options.filters.stateFilterPasses(story)) ||
-      !(await options.filters.ownerFilterPasses(story))
-    ) {
-      // todo - maybe specify what filter caused this
-      console.warn(`Branch ${branchName} filtered out by configuration`);
-      return false;
+      if (
+        !(await options.filters.stateFilterPasses(story)) ||
+        !(await options.filters.ownerFilterPasses(story))
+      ) {
+        // todo - maybe specify what filter caused this
+        console.warn(`Branch ${branchName} filtered out by configuration`);
+        return false;
+      }
+    } catch (e) {
+      if (e === 404) {
+        const action = handleTicketNotFound(options.onTicketNotFound, storyId);
+
+        if (action === NOTFOUND_ABORT) process.exit();
+        else if (action === NOTFOUND_SKIP) return false;
+
+        // NOTFOUND_DELETE should proceed through to the prompting
+      } else {
+        throw new Error(`Unexpected error on getStory(): ${e}`);
+      }
     }
   }
 

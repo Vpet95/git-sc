@@ -69,3 +69,7 @@ export const DEFAULT_OPTIONS = {
 };
 
 export const TICKET_ID_PROMPT = "Ticket ID | <enter>: ";
+
+export const NOTFOUND_ABORT = 0;
+export const NOTFOUND_DELETE = 1;
+export const NOTFOUND_SKIP = 2;
