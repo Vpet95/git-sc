@@ -140,12 +140,8 @@ class Config {
         }
       });
 
-      // console.error(`Your settings:\n${JSON.stringify(this.opts, null, 2)}`);
       process.exit();
     }
-
-    // todo - remove
-    // process.exit();
   }
 
   get debug() {

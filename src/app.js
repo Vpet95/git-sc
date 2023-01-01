@@ -394,7 +394,6 @@ export const cleanBranches = async (remote, force) => {
   // our safe haven - can't delete this one
   const primaryBranch = config.commonOptions.primaryBranch;
 
-  // todo - maybe move these types of logs into the git commands themsleves?
   console.log(`Checking out ${primaryBranch}...`);
   git.checkout({ branchName: primaryBranch });
 
