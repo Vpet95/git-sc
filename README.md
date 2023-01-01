@@ -187,6 +187,11 @@ Only use this option if you know what you're doing. `--force` will:
 The `gitscconf.json` file contains a section for the delete command, allowing you to configure safety checks to prevent accidental branch deletion. Options include:
 
 - `force` - whether to bypass prompts and validation (default: `false`), see [Force](#force)
+- `onTicketNotFound` - determines what action to take in the event that the Shortcut ticket corresponding to the branch cannot be found, possible values include:
+  - `abort` - cancel deletion. For the `clean` command, this means stopping on the first branch with a missing Shortcut ticket. This is the default for `delete`.
+  - `delete` - proceed with the delete anyway, the user will have one last chance to change their mind at the y/n prompt, unless `prompt` is turned off
+  - `skip` - skip the current branch; for `delete` this means ending execution (NOOP); the `clean` command will move on to attempt the delete the next branch, if there is another. This is the default for `clean`.
+- `prompt` - boolean, whether to prompt the user before deleting the branch (default: `true`); note: validation will still occur if `prompt` is `false`.
 - `remote` - whether to delete remote branches in addition to local (default: `false`)
 - `filters`
   - `stateFilter` - validates that the Shortcut ticket pertaining to the branch being deleted falls within a certain work state
