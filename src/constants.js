@@ -1,4 +1,4 @@
-export const PROGRAM_VERSION = "1.0.0";
+export const PROGRAM_VERSION = "1.0.1";
 export const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 export const DEFAULT_CONFIG_LOCATIONS = ["./", "~/"];
 
