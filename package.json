@@ -22,7 +22,8 @@
     "commander": "^9.1.0",
     "joi": "^17.6.0",
     "open": "^8.4.0",
-    "prompt-sync-plus": "^1.0.1"
+    "prompt-sync-plus": "^1.0.1",
+    "wordwrapjs": "^5.1.0"
   },
   "bin": {
     "git-sc": "./index.js"
@@ -33,7 +34,6 @@
     "chai": "^4.3.7",
     "install": "^0.13.0",
     "mocha": "^10.2.0",
-    "npm": "^9.2.0",
-    "wordwrapjs": "^5.1.0"
+    "npm": "^9.2.0"
   }
 }
