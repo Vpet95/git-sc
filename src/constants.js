@@ -1,4 +1,9 @@
-export const PROGRAM_VERSION = "1.0.2";
+export const VERSION_MAJOR = 2;
+export const VERSION_MINOR = 0;
+export const VERSION_PATCH = 0;
+export const PROGRAM_VERSION = `${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}`;
+export const SEMVER_REGEX = /(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/;
+
 export const DEFAULT_CONFIG_FILENAME = "gitscconf.json";
 export const DEFAULT_CONFIG_LOCATIONS = ["./", "~/"];
 
@@ -77,3 +82,13 @@ export const TICKET_ID_PROMPT = "Ticket ID | <enter>: ";
 export const NOTFOUND_ABORT = 0;
 export const NOTFOUND_DELETE = 1;
 export const NOTFOUND_SKIP = 2;
+
+/**
+ * Branch name formatting config file syntax - the user can write anything in the format
+ * string, but the string must have at least ONE of these - otherwise, all branch names generated would
+ * be identical
+ */
+export const FORMAT_TICKET_ID = "<ticket-id>";
+export const FORMAT_TITLE = "<title>";
+
+export const BRANCH_NAME_FORMATTERS = [FORMAT_TICKET_ID, FORMAT_TITLE];
