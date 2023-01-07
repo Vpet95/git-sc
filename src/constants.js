@@ -91,6 +91,9 @@ export const NOTFOUND_SKIP = 2;
  * to look like.
  *
  * At this time git-sc joins words within titles and separates them with hyphens.
+ *
+ * Regex is stored as regex here instead of string because formatting tools like Prettier remove back-slashes that
+ * create invalid escape sequences from strings by default; so \d becomes d, which isn't intended
  */
 export const FORMAT_TICKET_ID = {
   syntax: "<ticket-id>",

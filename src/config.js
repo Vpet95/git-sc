@@ -11,6 +11,7 @@ import {
   SEMVER_REGEX,
   VERSION_MAJOR,
   PROGRAM_VERSION,
+  FORMAT_TICKET_ID,
 } from "./constants.js";
 import { includesAny, wrapLog } from "./utils.js";
 import GitClient from "./git-lib/git-client.js";
@@ -128,19 +129,19 @@ const optionsSchema = Joi.object({
 
         // without any git-sc formatters, all generated branch names would be identical, which defeats the purpose
         // of the tool entirely. This is considered a misconfiguration.
-        if (formattersUsed.length === 0) {
-          console.error(
-            `'branchNameFormat' must include at least one of:\n  ${BRANCH_NAME_FORMATTERS.map(
-              (f) => f.syntax
-            ).join(
-              "\n  "
-            )}\nCurrent configuration would generate identical branch names on every CREATE.`
+        if (
+          formattersUsed.length === 0 ||
+          !formattersUsed.includes(FORMAT_TICKET_ID.syntax)
+        ) {
+          wrapLog(
+            "'branchNameFormat' requires the <ticket-id> formatter so git-sc can properly parse and lookup Shortcut tickets for you, and so generated branch names contain a unique component",
+            "error"
           );
           process.exit();
         }
 
-        // would likely never happen, but good to check - can't have multiple capture groups of the same name in our regex
         if (multiUseFormatters.length > 0) {
+          // would likely never happen, but good to check - can't have multiple capture groups of the same name in our regex
           console.error(
             `Detected multiple uses of the following formatters in 'branchNameFormat':\n  ${multiUseFormatters.join(
               "\n  "
@@ -351,7 +352,7 @@ class Config {
     this.configured = true;
 
     console.log("Config file validated!");
-    this.dump();
+
     process.exit();
   }
 
@@ -375,7 +376,18 @@ class Config {
    * to Shortcut support, a ticket id can be any positive integer, so we can't make any assumptions about which number represents
    * the ticket id, and which number represents something else (say, a version number, e.g. sc12345/some-branch-name-v2)
    */
-  #processBranchNameFormat() {}
+  #processBranchNameFormat() {
+    let regexString = this.opts.common.branchNameFormat;
+
+    BRANCH_NAME_FORMATTERS.forEach((formatter) => {
+      regexString = regexString.replaceAll(
+        formatter.syntax,
+        formatter.regex.toString().replaceAll("/", "")
+      );
+    });
+
+    this.opts.common.branchNameFormatRegex = new RegExp(regexString);
+  }
 
   toString(pretty = true) {
     return JSON.stringify(this.opts, null, pretty ? 2 : undefined);
