@@ -40,6 +40,8 @@ export const DEFAULT_OPTIONS = {
     primaryBranch: "develop",
     primaryBranchRemote: "origin",
     shortcutWorkspace: "",
+    branchNameFormat:
+      "<required>: what will branches generated or parsed by git-sc look like?",
   },
   create: {
     pullLatest: true,
@@ -84,11 +86,20 @@ export const NOTFOUND_DELETE = 1;
 export const NOTFOUND_SKIP = 2;
 
 /**
- * Branch name formatting config file syntax - the user can write anything in the format
- * string, but the string must have at least ONE of these - otherwise, all branch names generated would
- * be identical
+ * Syntax represents how the user will interact with these concepts: e.g. they provide the string literal <title> in their config
+ * Regex represents our knowledge of how we format these pieces within git-sc, i.e. what we expect git-sc generated branch names
+ * to look like.
+ *
+ * At this time git-sc joins words within titles and separates them with hyphens.
  */
-export const FORMAT_TICKET_ID = "<ticket-id>";
-export const FORMAT_TITLE = "<title>";
+export const FORMAT_TICKET_ID = {
+  syntax: "<ticket-id>",
+  regex: /(?<ticketId>\d+)/,
+};
+
+export const FORMAT_TITLE = {
+  syntax: "<title>",
+  regex: /(?<title>([^-]+-?)+)/,
+};
 
 export const BRANCH_NAME_FORMATTERS = [FORMAT_TICKET_ID, FORMAT_TITLE];

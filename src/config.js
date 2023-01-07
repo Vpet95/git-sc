@@ -105,12 +105,54 @@ const optionsSchema = Joi.object({
     shortcutWorkspace: Joi.string().allow(""),
     branchNameFormat: Joi.string()
       .required()
-      .custom((value, helpers) => {
+      .custom((value) => {
+        const formatterCounts = BRANCH_NAME_FORMATTERS.map(({ syntax }) => {
+          // in case user does something tricky, like <Title> or <TiCkEt-Id>
+          const fullInput = value.toLowerCase();
+
+          return {
+            syntax: syntax,
+            count:
+              (fullInput.length - fullInput.replaceAll(syntax, "").length) /
+              syntax.length,
+          };
+        });
+
+        const multiUseFormatters = [];
+        const formattersUsed = [];
+
+        formatterCounts.forEach((formatter) => {
+          if (formatter.count > 0) formattersUsed.push(formatter.syntax);
+          if (formatter.count > 1) multiUseFormatters.push(formatter.syntax);
+        });
+
         // without any git-sc formatters, all generated branch names would be identical, which defeats the purpose
         // of the tool entirely. This is considered a misconfiguration.
+        if (formattersUsed.length === 0) {
+          console.error(
+            `'branchNameFormat' must include at least one of:\n  ${BRANCH_NAME_FORMATTERS.map(
+              (f) => f.syntax
+            ).join(
+              "\n  "
+            )}\nCurrent configuration would generate identical branch names on every CREATE.`
+          );
+          process.exit();
+        }
+
+        // would likely never happen, but good to check - can't have multiple capture groups of the same name in our regex
+        if (multiUseFormatters.length > 0) {
+          console.error(
+            `Detected multiple uses of the following formatters in 'branchNameFormat':\n  ${multiUseFormatters.join(
+              "\n  "
+            )}\nEach formatter can only be used once.`
+          );
+
+          process.exit();
+        }
+
         const containsBranchFormatter =
           BRANCH_NAME_FORMATTERS.filter((formatter) =>
-            value.includes(formatter)
+            value.includes(formatter.syntax)
           ).length > 0;
 
         if (!containsBranchFormatter) {
@@ -304,7 +346,13 @@ class Config {
 
     await this.#processFilters();
 
+    this.#processBranchNameFormat();
+
     this.configured = true;
+
+    console.log("Config file validated!");
+    this.dump();
+    process.exit();
   }
 
   async #processFilters() {
@@ -319,6 +367,15 @@ class Config {
     );
     await this.opts[this.currentCommand].filters.unpack();
   }
+
+  /**
+   * on branch creation, we take the branch name format, and replace special pieces of it (like <title> and <ticket-id>) with
+   * data from the Shortcut API. On other commands, like delete, we need to understand what branches look like so we know
+   * how to parse out ticket IDs properly. For instance, a branch name may have multiple groups of numbers, and according
+   * to Shortcut support, a ticket id can be any positive integer, so we can't make any assumptions about which number represents
+   * the ticket id, and which number represents something else (say, a version number, e.g. sc12345/some-branch-name-v2)
+   */
+  #processBranchNameFormat() {}
 
   toString(pretty = true) {
     return JSON.stringify(this.opts, null, pretty ? 2 : undefined);
