@@ -28,6 +28,8 @@ npx git-sc-cli <command>
 
 git-sc requires that you have a Shortcut API token - please read [the official help article](https://help.shortcut.com/hc/en-us/articles/205701199-Shortcut-API-Tokens) on generating your own Shortcut API token for more info.
 
+Due to certain Node.js APIs in use, git-sc requires a minimum Node.js version of 17.0.0. Check your version with `node -v`.
+
 ## Usage
 
 Call git-sc with `--help` to see full usage:
