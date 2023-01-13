@@ -156,7 +156,6 @@ const optionsSchema = Joi.object({
   }).required(),
   create: Joi.object({
     pullLatest: Joi.boolean(),
-    branchPrefix: Joi.string(),
     branchKeywordCountLimit: Joi.number().integer().min(0),
     branchRemote: Joi.string().custom(refValidator),
     createAndLinkToRemote: Joi.boolean(),

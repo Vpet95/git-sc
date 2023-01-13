@@ -45,7 +45,6 @@ export const DEFAULT_OPTIONS = {
   },
   create: {
     pullLatest: true,
-    branchPrefix: "sc",
     branchKeywordCountLimit: 10,
     branchRemote: "origin",
     createAndLinkToRemote: true,

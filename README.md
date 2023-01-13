@@ -119,7 +119,6 @@ Ticket ID | <enter>: 12
 Each character typed filters the suggested tickets down until one remaining suggestion, then the rest of the input is filled in. The `create` command is configured within the `create` field of the JSON configuration file, and contains the following fields:
 
 - `pullLatest` - determines whether the `primaryBranch` should be updated prior to creating the new branch
-- `branchPrefix` - determines a prefix string of characters to prepend to the generated branch name, defaults to "sc"
 - `branchKeywordCountLimit` - determines the maximum number of individual words that can appear in generated branch names, defaults to 10
 - `branchRemote` - determines the git remote for the branch being created, defaults to "origin"
 - `createAndLinkToRemote` - determines whether git-sc should also create the remote branch with the same name, and set the local branch to track the remote, defaults to `true`
