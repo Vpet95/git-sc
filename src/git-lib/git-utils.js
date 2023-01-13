@@ -80,17 +80,15 @@ export const createNewBranch = (newBranchName, errorHandler) => {
 
 // I'd rather have the caller decide what to do if multiple branches are contain the same story id
 // but I provide some basic error handling here
-export const findBranchesByStoryId = (storyId, errorOnMultiple = false) => {
-  if (typeof storyId !== "number")
-    throw new Error(
-      `argument 'storyId' must be of type 'number'; was type '${typeof storyId}'`
-    );
-
+export const findBranchesByRegexPattern = (
+  branchNamePatternRegex,
+  errorOnMultiple = false
+) => {
   const git = getGitClient();
 
   const branches = git
     .listBranches()
-    .filter((branch) => branch.includes(String(storyId)));
+    .filter((branch) => branchNamePatternRegex.test(branch));
 
   if (errorOnMultiple && branches.length > 1)
     throw new Error(`Multiple branches containing story id [${storyId}] found`);

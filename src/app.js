@@ -13,11 +13,12 @@ import {
   NOTFOUND_ABORT,
   NOTFOUND_DELETE,
   NOTFOUND_SKIP,
+  FORMAT_TICKET_ID,
 } from "./constants.js";
 import { getGitClient } from "./git-lib/git-client.js";
 import {
   createNewBranch,
-  findBranchesByStoryId,
+  findBranchesByRegexPattern,
   getRemoteOf,
 } from "./git-lib/git-utils.js";
 import { generateName } from "./name-utils.js";
@@ -247,7 +248,7 @@ async function validateDeleteConditionsAndPrompt(
         !(await options.filters.ownerFilterPasses(story))
       ) {
         // todo - maybe specify what filter caused this
-        console.warn(`Branch ${branchName} filtered out by configuration`);
+        wrapLog(`Branch ${branchName} filtered out by configuration`, "warn");
         return false;
       }
     } catch (e) {
@@ -295,11 +296,16 @@ async function validateDeleteConditionsAndPrompt(
 // does the legwork of finding the specific branch name to delete
 export const storyIdToBranchName = (storyId) => {
   const git = getGitClient();
+  const { branchNameFormatPattern } = getConfig().commonOptions;
 
   let branchName =
     storyId === undefined
       ? git.getCurrentBranchName()
-      : findBranchesByStoryId(parseInt(storyId, 10));
+      : findBranchesByRegexPattern(
+          new RegExp(
+            branchNameFormatPattern.replace(FORMAT_TICKET_ID.syntax, storyId)
+          )
+        );
 
   if (branchName === undefined) {
     console.error("Error: could not find current branch name");

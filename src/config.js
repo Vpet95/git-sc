@@ -12,6 +12,7 @@ import {
   VERSION_MAJOR,
   PROGRAM_VERSION,
   FORMAT_TICKET_ID,
+  FORMAT_TITLE,
 } from "./constants.js";
 import { includesAny, wrapLog } from "./utils.js";
 import GitClient from "./git-lib/git-client.js";
@@ -358,16 +359,14 @@ class Config {
    * the ticket id, and which number represents something else (say, a version number, e.g. sc12345/some-branch-name-v2)
    */
   #processBranchNameFormat() {
-    let regexString = this.opts.common.branchNameFormat;
-
-    BRANCH_NAME_FORMATTERS.forEach((formatter) => {
-      regexString = regexString.replaceAll(
-        formatter.syntax,
-        formatter.regex.toString().replaceAll("/", "")
+    // we don't want to replace the <ticket-id> because we'll want to look for it literally
+    // when we search for branches to delete; if we support other formatters in the future,
+    // we'll need to iterate over BRANCH_NAME_FORMATTERS
+    this.opts.common.branchNameFormatPattern =
+      this.opts.common.branchNameFormat.replace(
+        FORMAT_TITLE.syntax,
+        FORMAT_TITLE.regex.toString().replaceAll("/", "")
       );
-    });
-
-    this.opts.common.branchNameFormatRegex = new RegExp(regexString);
   }
 
   toString(pretty = true) {
