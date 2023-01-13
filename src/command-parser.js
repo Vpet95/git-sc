@@ -139,13 +139,15 @@ to run with reasonable defaults, if possible.`
 
     const openCommand = new commander.Command("open");
     openCommand
-      .argument("<story id>")
+      .argument("[story id]")
       .option(
         "-w, --workspace <name>",
         "Supplies the Shortcut workspace name",
         ""
       )
-      .description("Opens the given Shortcut story in the default web browser")
+      .description(
+        "Opens the given Shortcut story in the default web browser. If [story id] is omitted, opens the Shortcut story pertaining to the current branch."
+      )
       .action((storyId, options, __) => {
         openStory(storyId, options.workspace);
       });

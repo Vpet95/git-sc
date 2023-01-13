@@ -20,6 +20,7 @@ import {
   createNewBranch,
   findBranchesByRegexPattern,
   getRemoteOf,
+  getCurrentTicketId,
 } from "./git-lib/git-utils.js";
 import { generateName } from "./name-utils.js";
 import {
@@ -296,14 +297,14 @@ async function validateDeleteConditionsAndPrompt(
 // does the legwork of finding the specific branch name to delete
 export const storyIdToBranchName = (storyId) => {
   const git = getGitClient();
-  const { branchNameFormatPattern } = getConfig().commonOptions;
+  const { branchNameDeletePattern } = getConfig().commonOptions;
 
   let branchName =
     storyId === undefined
       ? git.getCurrentBranchName()
       : findBranchesByRegexPattern(
           new RegExp(
-            branchNameFormatPattern.replace(FORMAT_TICKET_ID.syntax, storyId)
+            branchNameDeletePattern.replace(FORMAT_TICKET_ID.syntax, storyId)
           )
         );
 
@@ -423,16 +424,23 @@ export const cleanBranches = async (remote, force) => {
   console.log(`Deleted (${deleteCount}/${branches.length}) branches`);
 };
 
-export const openStory = (storyId, workspace = undefined) => {
-  if (storyId.length === 0 || isNaN(storyId)) {
+export const openStory = (givenStoryId = undefined, workspace = undefined) => {
+  const storyId = givenStoryId ?? getCurrentTicketId();
+
+  if (storyId === undefined) {
     console.error(
-      `Value (${storyId}) supplied for <story id> must be a valid integer, exiting.`
+      "Could not extract a valid shortcut story id from the current git branch"
+    );
+    process.exit();
+  } else if (storyId.length === 0 || isNaN(storyId)) {
+    console.error(
+      `Value (${givenStoryId}) supplied for story id must be a valid integer`
     );
     process.exit();
   }
 
-  const config = getConfig();
-  const workspaceName = workspace || config.commonOptions.shortcutWorkspace;
+  const workspaceName =
+    workspace || getConfig().commonOptions.shortcutWorkspace;
 
   if (!workspaceName) {
     console.error(

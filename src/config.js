@@ -362,11 +362,24 @@ class Config {
     // we don't want to replace the <ticket-id> because we'll want to look for it literally
     // when we search for branches to delete; if we support other formatters in the future,
     // we'll need to iterate over BRANCH_NAME_FORMATTERS
-    this.opts.common.branchNameFormatPattern =
+    this.opts.common.branchNameDeletePattern =
       this.opts.common.branchNameFormat.replace(
         FORMAT_TITLE.syntax,
         FORMAT_TITLE.regex.toString().replaceAll("/", "")
       );
+
+    // if the user omits the ticket id from the git-sc open command, we want to parse out the ticket id
+    // from the currently checked-out branch, so we'll need the <ticket-id> pattern regex-ified
+    this.opts.common.branchNameFullPattern = new RegExp(
+      BRANCH_NAME_FORMATTERS.reduce(
+        (acc, formatter) =>
+          acc.replace(
+            formatter.syntax,
+            formatter.regex.toString().replaceAll("/", "")
+          ),
+        this.opts.common.branchNameFormat
+      )
+    );
   }
 
   toString(pretty = true) {
