@@ -10,6 +10,7 @@ import { getConfig } from "./config.js";
 import {
   UNDELETABLE_BRANCHES,
   TICKET_ID_PROMPT,
+  TICKET_SEARCH_PROMPT,
   NOTFOUND_ABORT,
   NOTFOUND_DELETE,
   NOTFOUND_SKIP,
@@ -39,7 +40,7 @@ import {
   selectionPrompt,
   underline,
   wrapLog,
-  completeStartsWith,
+  completeContains,
   truncateString,
   Time,
 } from "./utils.js";
@@ -85,7 +86,7 @@ export const initApp = (fileName, force = false) => {
 const promptForDirectTicketId = () => {
   const resp = prompt(TICKET_ID_PROMPT);
 
-  if (resp.trim().length === 0) {
+  if (resp === null || resp.trim().length === 0) {
     console.log("Ok, canceled");
     return null;
   } else if (isNaN(resp)) {
@@ -99,22 +100,27 @@ const promptForDirectTicketId = () => {
 };
 
 const promptForTicketIdWithAutocomplete = (stories) => {
-  const resp = prompt(TICKET_ID_PROMPT, {
+  const resp = prompt(TICKET_SEARCH_PROMPT, {
     autocomplete: {
       behavior: AutocompleteBehavior.SUGGEST,
       suggestColCount: 1,
       sticky: true,
-      searchFn: completeStartsWith(
+      searchFn: completeContains(
         stories.map((story) =>
           truncateString(
             `${story.id} - ${story.name}`,
             process.stdout.columns -
               (TICKET_ID_PROMPT.length + String(story.id).length + 3)
-          )
+          ).toLowerCase()
         )
       ),
     },
   });
+
+  if (resp === null || resp.length === 0) {
+    console.log("Ok, canceled");
+    return null;
+  }
 
   const ticketId = parseInt(resp);
 

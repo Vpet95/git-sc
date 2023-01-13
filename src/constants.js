@@ -78,7 +78,8 @@ export const DEFAULT_OPTIONS = {
   },
 };
 
-export const TICKET_ID_PROMPT = "Ticket ID | <enter>: ";
+export const TICKET_ID_PROMPT = "Ticket ID | ^C: ";
+export const TICKET_SEARCH_PROMPT = "Search story | ^C to cancel: ";
 
 export const NOTFOUND_ABORT = 0;
 export const NOTFOUND_DELETE = 1;
