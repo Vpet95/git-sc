@@ -190,7 +190,10 @@ to run with reasonable defaults, if possible.`
       });
 
     program.addCommand(initCommand);
-    program.addCommand(createCommand);
+    program.addCommand(createCommand, {
+      // when user runs git-sc without any commands specified, 'git-sc create' should run
+      isDefault: true,
+    });
     program.addCommand(deleteCommand);
     program.addCommand(cleanCommand);
     program.addCommand(openCommand);
