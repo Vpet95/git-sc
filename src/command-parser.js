@@ -7,7 +7,7 @@ import { initializeGitClient } from "./git-lib/git-client.js";
 import {
   initApp,
   createBranch,
-  storyIdToBranchName,
+  storyIdToBranchNames,
   deleteBranch,
   cleanBranches,
   openStory,
@@ -112,10 +112,37 @@ to run with reasonable defaults, if possible.`
       .description(
         "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checked out branch."
       )
-      .action((storyId, options, __) => {
-        const branchName = storyIdToBranchName(storyId);
+      .action(async (storyId, options, __) => {
+        // storyIdToBranchNames can return undefined, a single branch name string, or a list of branch name strings
+        const branchNames = storyIdToBranchNames(storyId);
 
-        deleteBranch(branchName, storyId, options.remote, options.force);
+        if (branchNames === undefined) {
+          console.warn(`No branches contain the story id ${storyId}`);
+          return;
+        }
+
+        if (Array.isArray(branchNames)) {
+          // todo - optimize deleteBranch so it doesn't re-run validation for each branch sharing the same ticket id
+          const results = await Promise.all(
+            branchNames.map(async (branch) => {
+              return deleteBranch(
+                branch,
+                storyId,
+                options.remote,
+                options.force
+              );
+            })
+          );
+
+          const deleteCount = results.filter((result) =>
+            Boolean(result)
+          ).length;
+          console.log(
+            `Deleted (${deleteCount}/${branchNames.length}) branches`
+          );
+        } else {
+          deleteBranch(branchNames, storyId, options.remote, options.force);
+        }
       });
 
     const cleanCommand = new commander.Command("clean");

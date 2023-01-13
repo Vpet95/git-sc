@@ -37,7 +37,7 @@ import {
 import {
   assertSuccess,
   extractStoryIdFromBranchName,
-  selectionPrompt,
+  multiSelectionPrompt,
   underline,
   wrapLog,
   completeContains,
@@ -247,7 +247,9 @@ async function validateDeleteConditionsAndPrompt(
     try {
       story = await getStory(
         parseInt(storyId, 10),
-        config.currentCommand === "clean" // clean will most likely be calling getStory on a bunch of different stories at once
+        // clean will most likely be calling getStory on a bunch of different stories at once
+        // delete may end up doing so too if there are multiple branches that map to the same story id
+        config.currentCommand === "clean" || config.currentCommand === "delete"
       );
 
       if (
@@ -301,7 +303,7 @@ async function validateDeleteConditionsAndPrompt(
 }
 
 // does the legwork of finding the specific branch name to delete
-export const storyIdToBranchName = (storyId) => {
+export const storyIdToBranchNames = (storyId) => {
   const git = getGitClient();
   const { branchNameDeletePattern } = getConfig().commonOptions;
 
@@ -327,9 +329,9 @@ export const storyIdToBranchName = (storyId) => {
         break;
       default:
         console.log(
-          `Multiple branches contain the story id ${storyId}; select one, or hit enter to cancel`
+          `Multiple branches found.\nEnter a separated list of digits, * for all branches, or ^C to cancel.`
         );
-        branchName = selectionPrompt(branchName);
+        branchName = multiSelectionPrompt(branchName);
 
         if (!branchName) {
           console.log("Ok, canceled");
@@ -348,11 +350,6 @@ export const deleteBranch = async (
   force,
   overrideOptions
 ) => {
-  if (branchName === undefined) {
-    console.warn(`No branches contain the story id ${storyId}`);
-    return false;
-  }
-
   const config = getConfig();
   const git = getGitClient();
   const options = overrideOptions || config.deleteOptions;
@@ -390,7 +387,7 @@ export const deleteBranch = async (
 
   git.delete(
     {
-      branchName,
+      branchName: branchName,
       remoteName,
       force: shouldForce,
     },
