@@ -151,20 +151,6 @@ const optionsSchema = Joi.object({
           process.exit();
         }
 
-        const containsBranchFormatter =
-          BRANCH_NAME_FORMATTERS.filter((formatter) =>
-            value.includes(formatter.syntax)
-          ).length > 0;
-
-        if (!containsBranchFormatter) {
-          console.error(
-            `'branchNameFormat' must include at least one of:\n  ${BRANCH_NAME_FORMATTERS.join(
-              "\n  "
-            )}\nCurrent configuration would generate identical branch names on every CREATE.`
-          );
-          process.exit();
-        }
-
         return value;
       }, "must include at least one formatter"),
   }).required(),
@@ -350,10 +336,6 @@ class Config {
     this.#processBranchNameFormat();
 
     this.configured = true;
-
-    console.log("Config file validated!");
-
-    process.exit();
   }
 
   async #processFilters() {
