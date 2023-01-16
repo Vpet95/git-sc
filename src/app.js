@@ -10,15 +10,18 @@ import { getConfig } from "./config.js";
 import {
   UNDELETABLE_BRANCHES,
   TICKET_ID_PROMPT,
+  TICKET_SEARCH_PROMPT,
   NOTFOUND_ABORT,
   NOTFOUND_DELETE,
   NOTFOUND_SKIP,
+  FORMAT_TICKET_ID,
 } from "./constants.js";
 import { getGitClient } from "./git-lib/git-client.js";
 import {
   createNewBranch,
-  findBranchesByStoryId,
+  findBranchesByRegexPattern,
   getRemoteOf,
+  getCurrentTicketId,
 } from "./git-lib/git-utils.js";
 import { generateName } from "./name-utils.js";
 import {
@@ -34,10 +37,10 @@ import {
 import {
   assertSuccess,
   extractStoryIdFromBranchName,
-  selectionPrompt,
+  multiSelectionPrompt,
   underline,
   wrapLog,
-  completeStartsWith,
+  completeContains,
   truncateString,
   Time,
 } from "./utils.js";
@@ -83,7 +86,7 @@ export const initApp = (fileName, force = false) => {
 const promptForDirectTicketId = () => {
   const resp = prompt(TICKET_ID_PROMPT);
 
-  if (resp.trim().length === 0) {
+  if (resp === null || resp.trim().length === 0) {
     console.log("Ok, canceled");
     return null;
   } else if (isNaN(resp)) {
@@ -97,22 +100,27 @@ const promptForDirectTicketId = () => {
 };
 
 const promptForTicketIdWithAutocomplete = (stories) => {
-  const resp = prompt(TICKET_ID_PROMPT, {
+  const resp = prompt(TICKET_SEARCH_PROMPT, {
     autocomplete: {
       behavior: AutocompleteBehavior.SUGGEST,
       suggestColCount: 1,
       sticky: true,
-      searchFn: completeStartsWith(
+      searchFn: completeContains(
         stories.map((story) =>
           truncateString(
             `${story.id} - ${story.name}`,
             process.stdout.columns -
               (TICKET_ID_PROMPT.length + String(story.id).length + 3)
-          )
+          ).toLowerCase()
         )
       ),
     },
   });
+
+  if (resp === null || resp.length === 0) {
+    console.log("Ok, canceled");
+    return null;
+  }
 
   const ticketId = parseInt(resp);
 
@@ -239,7 +247,9 @@ async function validateDeleteConditionsAndPrompt(
     try {
       story = await getStory(
         parseInt(storyId, 10),
-        config.currentCommand === "clean" // clean will most likely be calling getStory on a bunch of different stories at once
+        // clean will most likely be calling getStory on a bunch of different stories at once
+        // delete may end up doing so too if there are multiple branches that map to the same story id
+        config.currentCommand === "clean" || config.currentCommand === "delete"
       );
 
       if (
@@ -247,7 +257,7 @@ async function validateDeleteConditionsAndPrompt(
         !(await options.filters.ownerFilterPasses(story))
       ) {
         // todo - maybe specify what filter caused this
-        console.warn(`Branch ${branchName} filtered out by configuration`);
+        wrapLog(`Branch ${branchName} filtered out by configuration`, "warn");
         return false;
       }
     } catch (e) {
@@ -293,13 +303,18 @@ async function validateDeleteConditionsAndPrompt(
 }
 
 // does the legwork of finding the specific branch name to delete
-export const storyIdToBranchName = (storyId) => {
+export const storyIdToBranchNames = (storyId) => {
   const git = getGitClient();
+  const { branchNameDeletePattern } = getConfig().commonOptions;
 
   let branchName =
     storyId === undefined
       ? git.getCurrentBranchName()
-      : findBranchesByStoryId(parseInt(storyId, 10));
+      : findBranchesByRegexPattern(
+          new RegExp(
+            branchNameDeletePattern.replace(FORMAT_TICKET_ID.syntax, storyId)
+          )
+        );
 
   if (branchName === undefined) {
     console.error("Error: could not find current branch name");
@@ -314,9 +329,9 @@ export const storyIdToBranchName = (storyId) => {
         break;
       default:
         console.log(
-          `Multiple branches contain the story id ${storyId}; select one, or hit enter to cancel`
+          `Multiple branches found.\nEnter a separated list of digits, * for all branches, or ^C to cancel.`
         );
-        branchName = selectionPrompt(branchName);
+        branchName = multiSelectionPrompt(branchName);
 
         if (!branchName) {
           console.log("Ok, canceled");
@@ -335,11 +350,6 @@ export const deleteBranch = async (
   force,
   overrideOptions
 ) => {
-  if (branchName === undefined) {
-    console.warn(`No branches contain the story id ${storyId}`);
-    return false;
-  }
-
   const config = getConfig();
   const git = getGitClient();
   const options = overrideOptions || config.deleteOptions;
@@ -377,7 +387,7 @@ export const deleteBranch = async (
 
   git.delete(
     {
-      branchName,
+      branchName: branchName,
       remoteName,
       force: shouldForce,
     },
@@ -417,16 +427,23 @@ export const cleanBranches = async (remote, force) => {
   console.log(`Deleted (${deleteCount}/${branches.length}) branches`);
 };
 
-export const openStory = (storyId, workspace = undefined) => {
-  if (storyId.length === 0 || isNaN(storyId)) {
+export const openStory = (givenStoryId = undefined, workspace = undefined) => {
+  const storyId = givenStoryId ?? getCurrentTicketId();
+
+  if (storyId === undefined) {
     console.error(
-      `Value (${storyId}) supplied for <story id> must be a valid integer, exiting.`
+      "Could not extract a valid shortcut story id from the current git branch"
+    );
+    process.exit();
+  } else if (storyId.length === 0 || isNaN(storyId)) {
+    console.error(
+      `Value (${givenStoryId}) supplied for story id must be a valid integer`
     );
     process.exit();
   }
 
-  const config = getConfig();
-  const workspaceName = workspace || config.commonOptions.shortcutWorkspace;
+  const workspaceName =
+    workspace || getConfig().commonOptions.shortcutWorkspace;
 
   if (!workspaceName) {
     console.error(

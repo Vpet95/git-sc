@@ -108,21 +108,65 @@ export const selectionPrompt = (
   items,
   repeatListing = false,
   allowEmpty = true,
-  returnOnEmpty = undefined
+  defaultValue = undefined
 ) => {
   printSelectionList(items);
 
   while (true) {
-    const resp = prompt(`#${allowEmpty ? " | <enter>" : ""}: `).trim();
+    const resp = prompt(`# | * ${allowEmpty ? " | ^C" : ""}: `).trim();
 
     if (resp.length === 0 && allowEmpty) {
-      return returnOnEmpty;
+      return defaultValue;
+    } else if (resp === "*") {
+      return items;
     } else if (!Number.isNaN(resp) && Math.sign(resp) === 1) {
-      if (parseInt(resp, 10) <= items.length)
-        return items[parseInt(resp, 10) - 1]; // convert it back into an index
+      const digit = parseInt(resp, 10);
+
+      if (digit <= items.length) return items[digit - 1]; // convert it back into an index
     }
 
     console.log("Please enter a valid selection");
+
+    if (repeatListing) printSelectionList(items);
+  }
+};
+
+export const multiSelectionPrompt = (
+  items,
+  repeatListing = false,
+  allowEmpty = true,
+  defaultValue = undefined
+) => {
+  printSelectionList(items);
+
+  while (true) {
+    const resp = prompt(`#s | * | ^C: `).trim();
+
+    if (resp.length === 0 && allowEmpty) {
+      return defaultValue;
+    }
+
+    if (resp === "*") return items;
+
+    const digitList = resp.split(/[^\d]+/);
+    const results = [];
+
+    digitList.forEach((digitString) => {
+      const digit = parseInt(digitString, 10);
+
+      if (Number.isNaN(digit)) {
+        console.error(
+          `Couldn't parse a valid integer from ${digitString}, skipping`
+        );
+      } else if (digit > items.length) {
+        console.error(`Value (${digit}) out of bounds, skipping`);
+      } else {
+        results.push(items[digit - 1]);
+      }
+    });
+
+    if (results.length === 0) console.log("Please enter a valid selection");
+    else return results;
 
     if (repeatListing) printSelectionList(items);
   }

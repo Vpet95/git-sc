@@ -7,7 +7,7 @@ import { initializeGitClient } from "./git-lib/git-client.js";
 import {
   initApp,
   createBranch,
-  storyIdToBranchName,
+  storyIdToBranchNames,
   deleteBranch,
   cleanBranches,
   openStory,
@@ -28,19 +28,18 @@ class CommandParser {
     program
       .name("git-sc")
       .description(
-        "A tool that blends integrates git and Shortcut workflows so you never have to leave the terminal"
+        "A tool that integrates your git and Shortcut workflows so you never have to leave your terminal."
       )
       .version(PROGRAM_VERSION)
-      .option(
-        "--debug",
-        "Determines whether git-sc outputs status and debug messages to the console"
-      )
+      // .option(
+      //   "--debug",
+      //   "Determines whether git-sc outputs status and debug messages to the console"
+      // )
       .option(
         "-c, --config <file>",
         `Path to a JSON configuration file containing git-sc program options.
 If omitted, git-sc will look for a file named 'gitscconf.json' in the current directory,
-then in the home directory. If no such configuration files are found, git-sc will attempt
-to run with reasonable defaults, if possible.`
+then in the home directory. If no valid config file is found, git-sc will exit.`
       )
       .option(
         "-v, --verbose",
@@ -90,7 +89,7 @@ to run with reasonable defaults, if possible.`
     createCommand
       .argument("[story id]")
       .description(
-        "Creates a new git branch by generating a name from the given Shortcut story denoted by <story id>"
+        "Creates a new git branch, generating its name according to configured settings and details found within the Shortcut story pertaining to the given [story id]. If omitted, searches Shortcut for tickets according to configured autocomplete settings and allows user to specify a ticket interactively."
       )
       .action((storyId, _, __) => {
         createBranch(storyId);
@@ -101,37 +100,64 @@ to run with reasonable defaults, if possible.`
       .argument("[story id]")
       .option(
         "-f, --force",
-        "Does not check if the associated shortcut story is in a 'done' state, and does not prompt",
+        "Bypasses all prompting (except for the case where the given [story id] pertains to multiple local branches), and bypasses all Shortcut ticket validation.",
         false
       )
       .option(
         "-r, --remote",
-        "Determines whether the remote branch linked to the local branch should be deleted as well",
+        "Determines whether to delete a given branch's linked remote branch in addition to the local branch itself",
         false
       )
       .description(
-        "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checked out branch."
+        "Deletes a git branch pertaining to the given shortcut story - checking first if the story is in a 'done' state. If <story id> is omitted, attempts to delete the currently checked out branch. If no Shortcut story ID is found within the current branch's name, proceeds to prompt user for deletion."
       )
-      .action((storyId, options, __) => {
-        const branchName = storyIdToBranchName(storyId);
+      .action(async (storyId, options, __) => {
+        // storyIdToBranchNames can return undefined, a single branch name string, or a list of branch name strings
+        const branchNames = storyIdToBranchNames(storyId);
 
-        deleteBranch(branchName, storyId, options.remote, options.force);
+        if (branchNames === undefined) {
+          console.warn(`No branches contain the story id ${storyId}`);
+          return;
+        }
+
+        if (Array.isArray(branchNames)) {
+          // todo - optimize deleteBranch so it doesn't re-run validation for each branch sharing the same ticket id
+          const results = await Promise.all(
+            branchNames.map(async (branch) => {
+              return deleteBranch(
+                branch,
+                storyId,
+                options.remote,
+                options.force
+              );
+            })
+          );
+
+          const deleteCount = results.filter((result) =>
+            Boolean(result)
+          ).length;
+          console.log(
+            `Deleted (${deleteCount}/${branchNames.length}) branches`
+          );
+        } else {
+          deleteBranch(branchNames, storyId, options.remote, options.force);
+        }
       });
 
     const cleanCommand = new commander.Command("clean");
     cleanCommand
       .option(
         "-f, --force",
-        "Does not check if the associated shortcut story is in a 'done' state, and does not prompt",
+        "Bypasses all prompting and Shortcut ticket validation.",
         false
       )
       .option(
         "-r, --remote",
-        "Determines whether the remote branch linked to the local branch should be deleted as well",
+        "Determines whether to delete a given branch's linked remote branch in addition to the local branch itself",
         false
       )
       .description(
-        "Systematically scans and deletes local branches that pass configured filters"
+        "Attempts to delete all local (and remote, if configured) branches that pass the configured filters. For best results, branches should either have been generated by git-sc, or adhere to the formatting specified by 'branchNameFormat', allowing git-sc to parse out the Shortcut ticket ID and assess the 'doneness' of the related ticket."
       )
       .action((options, __) => {
         cleanBranches(options.remote, options.force);
@@ -139,13 +165,15 @@ to run with reasonable defaults, if possible.`
 
     const openCommand = new commander.Command("open");
     openCommand
-      .argument("<story id>")
+      .argument("[story id]")
       .option(
         "-w, --workspace <name>",
         "Supplies the Shortcut workspace name",
         ""
       )
-      .description("Opens the given Shortcut story in the default web browser")
+      .description(
+        "Opens the given Shortcut story in the default web browser. If [story id] is omitted, opens the Shortcut story pertaining to the current branch."
+      )
       .action((storyId, options, __) => {
         openStory(storyId, options.workspace);
       });
@@ -170,15 +198,15 @@ to run with reasonable defaults, if possible.`
       )
       .option(
         "--workflow-state <state>",
-        "Limits results to only stories in the given workflow state"
+        "Limits results to only stories in the given workflow state, like 'Inbox', 'Dev Backlog', etc. Does not need to be the full name of a workflow."
       )
       .option(
         "--completion-state <state>",
-        "Limits results to only stories with the given completion state"
+        "Limits results to only stories with the given completion state. Value can be 'unstarted', 'started', or 'done'."
       )
       .option(
         "-l, --limit <number>",
-        "Limit search results to this number of items"
+        "Limit search results to this number of items."
       )
       .description(
         "Lists Shortcut tickets by some configurable range. Defaults to tickets assigned to you."
@@ -188,7 +216,10 @@ to run with reasonable defaults, if possible.`
       });
 
     program.addCommand(initCommand);
-    program.addCommand(createCommand);
+    program.addCommand(createCommand, {
+      // when user runs git-sc without any commands specified, 'git-sc create' should run
+      isDefault: true,
+    });
     program.addCommand(deleteCommand);
     program.addCommand(cleanCommand);
     program.addCommand(openCommand);

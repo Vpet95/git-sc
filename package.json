@@ -1,6 +1,6 @@
 {
   "name": "git-sc-cli",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "A CLI tool that combines your git and Shortcut workflows. Search for Shortcut tickets, make branches, clean up your local branch list, etc.",
   "main": "index.js",
   "scripts": {},
@@ -22,7 +22,7 @@
     "commander": "^9.1.0",
     "joi": "^17.6.0",
     "open": "^8.4.0",
-    "prompt-sync-plus": "^1.0.1",
+    "prompt-sync-plus": "^1.0.2",
     "wordwrapjs": "^5.1.0"
   },
   "bin": {
