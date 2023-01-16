@@ -22,7 +22,7 @@
     "commander": "^9.1.0",
     "joi": "^17.6.0",
     "open": "^8.4.0",
-    "prompt-sync-plus": "^1.0.1",
+    "prompt-sync-plus": "^1.0.2",
     "wordwrapjs": "^5.1.0"
   },
   "bin": {
