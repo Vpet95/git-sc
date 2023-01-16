@@ -320,7 +320,8 @@ class Config {
     );
 
     if (!fp) {
-      throw new Error("No git-sc configuration file found");
+      console.error("No git-sc configuration file found");
+      process.exit();
     }
 
     const fileName = resolve(`${fp}/${DEFAULT_CONFIG_FILENAME}`);
