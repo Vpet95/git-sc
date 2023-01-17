@@ -192,7 +192,7 @@ function handleTicketNotFound(onTicketNotFound, storyId) {
       return NOTFOUND_ABORT;
     case "delete":
       wrapLog(
-        `${commonCopy} proceeding with branch deletion due to configured 'onStoryNotFound' value`,
+        `${commonCopy} proceeding with branch deletion due to configured 'onTicketNotFound' value`,
         "warn"
       );
       return NOTFOUND_DELETE;
