@@ -241,7 +241,10 @@ The `gitscconf.json` file contains a section for the delete command, allowing yo
 - `onTicketNotFound` - determines what action to take in the event that the Shortcut ticket corresponding to the branch cannot be found, possible values include:
   - `abort` - cancel deletion. For the `clean` command, this means stopping on the first branch with a missing Shortcut ticket. This is the default for `delete`.
   - `delete` - proceed with the delete anyway, the user will have one last chance to change their mind at the y/n prompt, unless `prompt` is turned off
-  - `skip` - skip the current branch; for `delete` this means ending execution (NOOP); the `clean` command will move on to attempt the delete the next branch, if there is another. This is the default for `clean`.
+  - `skip` - skip the current branch; for `delete` this means ending execution (NOOP); the `clean` command will move on to attempt the delete the next
+    branch, if there is another. This is the default for `clean`.
+- `onNotFullyMerged` - determines what action to take in the event that a delete receives a "error: The branch '[branch name]' is not fully merged." response. Possible values are `abort`, `delete`, or `skip`. In this case, the `delete` value will re-attempt the delete with force.
+- `onError` - a catch-all for errors other than the mentioned 'not fully merged' error. Possible values are: `abort`, `delete`, or `skip`, with identical behavior to `onNotFullyMerged`. Open an issue if more specific/tailored behavior is desired for a certain kind of error.
 - `prompt` - boolean, whether to prompt the user before deleting the branch (default: `true`); note: validation will still occur if `prompt` is `false`.
 - `remote` - whether to delete remote branches in addition to local (default: `false`)
 - `filters`

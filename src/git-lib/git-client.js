@@ -121,7 +121,13 @@ export default class GitClient {
       );
 
       // bail out early - there was an error and no handler was provided, or handler didn't exit
-      if (!result.success || remoteOnly) return result;
+      // if the remote doesn't exist, it's not much of a problem
+      if (
+        remoteOnly ||
+        (!result.success &&
+          !result.output.includes("remote ref does not exist"))
+      )
+        return result;
     }
 
     // it's safe to overwrite result here - the output will contain the necessary context to debug

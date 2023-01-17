@@ -175,7 +175,7 @@ export const multiSelectionPrompt = (
 export const extractStoryIdFromBranchName = (branchName, branchNameRegex) => {
   const result = branchName.match(branchNameRegex);
 
-  return result?.groups.ticketId;
+  return result?.groups?.ticketId;
 };
 
 export const underline = (str, customLength = null) =>

@@ -45,14 +45,18 @@ const deleteBranchFilterSchema = Joi.object({
     .min(1),
 });
 
+const badResultHandlerSchema = Joi.string()
+  .valid("abort", "delete", "skip")
+  .insensitive()
+  .required();
+
 const purgeSchema = Joi.object({
   force: Joi.boolean(),
   remote: Joi.boolean(),
   filters: deleteBranchFilterSchema,
-  onTicketNotFound: Joi.string()
-    .valid("abort", "delete", "skip")
-    .insensitive()
-    .required(),
+  onTicketNotFound: badResultHandlerSchema,
+  onNotFullyMerged: badResultHandlerSchema,
+  onError: badResultHandlerSchema,
   prompt: Joi.boolean(),
 });
 

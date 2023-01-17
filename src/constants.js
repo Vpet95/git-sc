@@ -1,5 +1,5 @@
 export const VERSION_MAJOR = 2;
-export const VERSION_MINOR = 0;
+export const VERSION_MINOR = 1;
 export const VERSION_PATCH = 1;
 export const PROGRAM_VERSION = `${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}`;
 export const SEMVER_REGEX = /(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/;
@@ -59,6 +59,8 @@ export const DEFAULT_OPTIONS = {
     force: false,
     remote: false,
     onTicketNotFound: "abort",
+    onNotFullyMerged: "abort",
+    onError: "abort",
     filters: structuredClone(branchDeletionFilters),
     prompt: true,
   },
@@ -66,6 +68,8 @@ export const DEFAULT_OPTIONS = {
     force: false,
     remote: false,
     onTicketNotFound: "skip",
+    onNotFullyMerged: "skip",
+    onError: "skip",
     filters: structuredClone(branchDeletionFilters),
     prompt: true,
   },
