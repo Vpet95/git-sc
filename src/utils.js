@@ -172,38 +172,10 @@ export const multiSelectionPrompt = (
   }
 };
 
-/* According to Shortcut support: 
-   Shortcut doesn't have a maximum value for entity IDs on the backend so the number of digits 
-   would increase with the more entities created. When an Organization is first created, 
-   a random value is assigned to the first entity created (e.g. Story, Epic) and then each 
-   entity afterwards is assigned a sequential value.
+export const extractStoryIdFromBranchName = (branchName, branchNameRegex) => {
+  const result = branchName.match(branchNameRegex);
 
-   The first entity would be any number > 0.
-   
-   This is quite broad, so we have to check to see if there is more than a single group of 
-   numbers within the name, and error out in those cases. Probably better than exhaustively
-   testing every possible ID contained within a branch name. */
-
-export const extractStoryIdFromBranchName = (branchName) => {
-  const idPattern = /\d+/;
-  const result = branchName.match(idPattern);
-
-  if (result === null) return result;
-
-  const storyId = result[0];
-  const nextIndex = storyId.length + result.index;
-
-  if (
-    nextIndex < branchName.length &&
-    branchName.substring(nextIndex).match(idPattern) !== null
-  ) {
-    console.error(
-      `Multiple possible id groups found in branch name '${branchName}'`
-    );
-    process.exit();
-  }
-
-  return storyId;
+  return result?.groups.ticketId;
 };
 
 export const underline = (str, customLength = null) =>
