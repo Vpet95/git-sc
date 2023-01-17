@@ -73,7 +73,10 @@ export const filterAndTransform = (name, limit) => {
   // consider also filtering out adverbs
   const newName = name
     .toLowerCase()
-    .replace(/[^\w]/g, " ")
+    // slashes are typically used to separate two words, we want to preserve that separation
+    .replace(/[\/\\]/g, " ")
+    // most other forms of punctuation will typically include parens () and single-quotes, e.g. "can't"
+    .replace(/[^\w_\s]/g, "")
     .split(/\s/)
     .filter((word) => word.length > 0 && !skipWords.includes(word))
     .slice(0, limit ? limit : Number.POSITIVE_INFINITY)
