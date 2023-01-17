@@ -239,8 +239,12 @@ async function validateDeleteConditionsAndPrompt(
 
   // we're deleting the current branch (or running clean), see if we can parse out a story id
   if (storyId === undefined) {
-    storyId = extractStoryIdFromBranchName(branchName);
-    storyId = storyId === null ? undefined : parseInt(storyId, 10);
+    storyId = extractStoryIdFromBranchName(
+      branchName,
+      config.commonOptions.branchNameFullPattern
+    );
+
+    if (storyId !== undefined) storyId = parseInt(storyId, 10);
   }
 
   if (storyId !== undefined) {
