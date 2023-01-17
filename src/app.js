@@ -298,6 +298,14 @@ async function validateDeleteConditionsAndPrompt(
       )
     : "y";
 
+  // really useful in cases where the user is doing a clean command, with hundreds of local branches
+  // and finds out last minute that they had prompt: true, and want an easy way to cancel the entire
+  // command, not just the current delete iteration
+  if (resp === null) {
+    console.log("Operation fully canceled");
+    process.exit();
+  }
+
   if (resp.length === 0 || resp.toLowerCase() === "n") {
     console.log("Ok, canceled");
     return false;
@@ -347,6 +355,24 @@ export const storyIdToBranchNames = (storyId) => {
   return branchName;
 };
 
+const handleDeleteError = (status, onError, forceDeleteFn, errorMessages) => {
+  console.error(status.output);
+
+  switch (onError) {
+    case "abort":
+      if (errorMessages.abort) console.error(errorMessages.abort);
+      process.exit();
+    case "skip":
+      if (errorMessages.skip) console.error(errorMessages.skip);
+      return false;
+    case "delete":
+      if (errorMessages.delete) console.error(errorMessages.delete);
+      forceDeleteFn();
+  }
+
+  return true;
+};
+
 export const deleteBranch = async (
   branchName,
   storyId,
@@ -389,14 +415,38 @@ export const deleteBranch = async (
     }`
   );
 
-  git.delete(
-    {
-      branchName: branchName,
-      remoteName,
-      force: shouldForce,
-    },
-    assertSuccess
-  );
+  const result = git.delete({
+    branchName: branchName,
+    remoteName,
+    force: shouldForce,
+  });
+
+  if (!result.success) {
+    const isNotFullyMerged = result.output.includes("is not fully merged");
+
+    return handleDeleteError(
+      result,
+      isNotFullyMerged ? options.onNotFullyMerged : options.onError,
+      () => {
+        git.delete({
+          branchName: branchName,
+          remoteName,
+          force: true,
+        });
+      },
+      {
+        abort: `Aborting due to ${
+          isNotFullyMerged ? "onNotFullyMerged" : "onError"
+        } setting`,
+        skip: isNotFullyMerged
+          ? `Branch '${branchName}' is not fully merged. Skipping due to onNotFullyMerged setting.`
+          : `Skipping due to onError setting.`,
+        delete: `Force deleting due to ${
+          isNotFullyMerged ? "onNotFullyMerged" : "onError"
+        } setting`,
+      }
+    );
+  }
 
   return true;
 };
