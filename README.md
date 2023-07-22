@@ -178,6 +178,18 @@ git-sc
 
 Which will launch the interactive prompt allowing you to search for Shortcut tickets.
 
+### Listing Branches
+
+The `git-sc branch` command allows you to list local git branches, much like `git branch`, however git-sc will group and sort the output by Shortcut ticket workflow state. By default branches pertaining to Shortcut tickets in a 'done' state will be omitted from this output. The syntax follows:
+
+```
+git-sc branch [options]
+```
+
+Where options can be one of:
+
+- `-a` or `--all` - tells git-sc to list all branches, even ones whose tickets pertain to Shortcut workflow states that are considered to be 'done'.
+
 ### Deleting a Branch
 
 The `git-sc delete` commands allows you to delete local git branches based on the desired Shortcut ticket state and/or ownership. The syntax follows:
