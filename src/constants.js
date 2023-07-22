@@ -34,6 +34,9 @@ export const DEFAULT_OPTIONS = {
   meta: {
     version: PROGRAM_VERSION,
   },
+  branch: {
+    excludeDoneWork: true,
+  },
   common: {
     shortcutApiKey: "",
     localGitDirectory: process.cwd(),

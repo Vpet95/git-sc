@@ -185,8 +185,11 @@ export const createBranch = async (storyId) => {
   createNewBranch(generateName(storyId, story.name), assertSuccess);
 };
 
-export const listBranches = async () => {
+export const listBranches = async (all) => {
   const git = getGitClient();
+  const config = getConfig();
+
+  const showAll = all || !config.branchOptions.excludeDoneWork;
 
   const branchNames = git.listBranches();
 
@@ -202,6 +205,8 @@ export const listBranches = async () => {
       const state = await getState(story.workflow_state_id);
       const workflowName = state ? state.name : "Unknown";
       const position = state ? state.position : -1;
+
+      if (state.type === "done" && !showAll) continue;
 
       if (workflowGroups[stateIdKey]) {
         workflowGroups[stateIdKey].branches.push(branchName);
