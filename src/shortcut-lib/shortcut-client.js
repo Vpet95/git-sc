@@ -128,11 +128,13 @@ const getCached = async ({ cacheKey, ...opts }, expectedStatusCode) => {
 };
 
 export const getStory = (ticketId, allowConcurrent = false) => {
-  return get({
-    baseURL: "https://api.app.shortcut.com/api/v3/stories",
-    resource: `${ticketId}`,
-    allowConcurrent,
-  });
+  return ticketId
+    ? get({
+        baseURL: "https://api.app.shortcut.com/api/v3/stories",
+        resource: `${ticketId}`,
+        allowConcurrent,
+      })
+    : Promise.resolve(null);
 };
 
 export const getWorkflows = async () => {

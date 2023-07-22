@@ -108,9 +108,13 @@ export const getRemoteOf = (branchName) => {
   return remoteInfo;
 };
 
-export const getCurrentTicketId = () => {
+export const getBranchTicketId = (branchName) => {
   const { branchNameFullPattern } = getConfig().commonOptions;
-  const branchName = getGitClient().getCurrentBranchName();
 
   return branchName.match(branchNameFullPattern)?.groups.ticketId;
+};
+export const getCurrentTicketId = () => {
+  const branchName = getGitClient().getCurrentBranchName();
+
+  return getBranchTicketId(branchName);
 };
