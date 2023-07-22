@@ -12,6 +12,7 @@ import {
   cleanBranches,
   openStory,
   listStories,
+  listBranches,
 } from "./app.js";
 
 const program = commander.program;
@@ -93,6 +94,20 @@ then in the home directory. If no valid config file is found, git-sc will exit.`
       )
       .action((storyId, _, __) => {
         createBranch(storyId);
+      });
+
+    const branchCommand = new commander.Command("branch");
+    branchCommand
+      .option(
+        "-a, --all",
+        "Include all branches. By default branches pertaining to completed shortcut tickets will be excluded from output.",
+        false
+      )
+      .description(
+        "similar to the 'git branch' command, but groups branches by workflow state, and sorts groups by completion state"
+      )
+      .action((options) => {
+        listBranches(options.all);
       });
 
     const deleteCommand = new commander.Command("delete");
@@ -220,6 +235,7 @@ then in the home directory. If no valid config file is found, git-sc will exit.`
       // when user runs git-sc without any commands specified, 'git-sc create' should run
       isDefault: true,
     });
+    program.addCommand(branchCommand);
     program.addCommand(deleteCommand);
     program.addCommand(cleanCommand);
     program.addCommand(openCommand);

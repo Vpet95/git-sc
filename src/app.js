@@ -22,6 +22,7 @@ import {
   findBranchesByRegexPattern,
   getRemoteOf,
   getCurrentTicketId,
+  getBranchTicketId,
 } from "./git-lib/git-utils.js";
 import { generateName } from "./name-utils.js";
 import {
@@ -182,6 +183,74 @@ export const createBranch = async (storyId) => {
   const story = await getStory(storyId);
 
   createNewBranch(generateName(storyId, story.name), assertSuccess);
+};
+
+export const listBranches = async (all) => {
+  const git = getGitClient();
+  const config = getConfig();
+
+  const showAll = all || !config.branchOptions.excludeDoneWork;
+
+  const branchNames = git.listBranches();
+
+  // groups of { [workflow id]: { workflowName: "string", branches: ["list of branch names"]}}
+  const workflowGroups = {};
+
+  for (const branchName of branchNames) {
+    const ticketId = getBranchTicketId(branchName);
+    const story = await getStory(ticketId);
+
+    if (story) {
+      const stateIdKey = String(story.workflow_state_id);
+      const state = await getState(story.workflow_state_id);
+      const workflowName = state ? state.name : "Unknown";
+      const position = state ? state.position : -1;
+
+      if (state.type === "done" && !showAll) continue;
+
+      if (workflowGroups[stateIdKey]) {
+        workflowGroups[stateIdKey].branches.push(branchName);
+      } else {
+        workflowGroups[stateIdKey] = {
+          workflowName,
+          position,
+          branches: [branchName],
+        };
+      }
+    } else {
+      if (workflowGroups["-1"]) {
+        workflowGroups["-1"].branches.push(branchName);
+      } else {
+        workflowGroups["-1"] = {
+          workflowName: "No associated Shortcut tickets",
+          position: null,
+          branches: [branchName],
+        };
+      }
+    }
+  }
+
+  const sortedByPosition = [];
+
+  for (const key of Object.keys(workflowGroups)) {
+    const pos = workflowGroups[key].position;
+
+    if (pos !== null) sortedByPosition[pos] = workflowGroups[key];
+  }
+
+  if (sortedByPosition.length) console.log("\n");
+
+  // the culmination of this
+  for (const group of sortedByPosition.filter((g) => Boolean(g))) {
+    console.log(underline(group.workflowName));
+    console.log(`${group.branches.join("\n")}\n`);
+  }
+
+  const nullGroup = workflowGroups["-1"];
+  if (nullGroup) {
+    console.log(underline(nullGroup.workflowName));
+    console.log(`${nullGroup.branches.join("\n")}\n`);
+  }
 };
 
 function handleTicketNotFound(onTicketNotFound, storyId) {
