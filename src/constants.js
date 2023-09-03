@@ -1,5 +1,5 @@
 export const VERSION_MAJOR = 2;
-export const VERSION_MINOR = 1;
+export const VERSION_MINOR = 2;
 export const VERSION_PATCH = 1;
 export const PROGRAM_VERSION = `${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}`;
 export const SEMVER_REGEX = /(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/;
@@ -35,6 +35,9 @@ export const DEFAULT_OPTIONS = {
     version: PROGRAM_VERSION,
   },
   branch: {
+    excludeDoneWork: true,
+  },
+  checkout: {
     excludeDoneWork: true,
   },
   common: {
@@ -87,6 +90,7 @@ export const DEFAULT_OPTIONS = {
 
 export const TICKET_ID_PROMPT = "Ticket ID | ^C: ";
 export const TICKET_SEARCH_PROMPT = "Search story | ^C to cancel: ";
+export const CHECKOUT_PROMPT = "# | ^C to cancel: ";
 
 export const NOTFOUND_ABORT = 0;
 export const NOTFOUND_DELETE = 1;

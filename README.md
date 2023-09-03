@@ -190,6 +190,64 @@ Where options can be one of:
 
 - `-a` or `--all` - tells git-sc to list all branches, even ones whose tickets pertain to Shortcut workflow states that are considered to be 'done'.
 
+The currently checked out branch is denoted by surrounding carets:
+
+```
+> git-sc branch
+Collecting branches and searching Shortcut...
+
+Ready for Prioritization
+------------------------
+>>> ch12345/some-cool-feature <<<
+ch23456/another-coolfeature
+
+Blocked/Paused
+--------------
+ch34567/a-third-cool-feature
+```
+
+### Checking out Branches
+
+The `git-sc checkout` command allows you to check out specific local branches, much like `git checkout`. This command piggie backs off of [git-sc branch](#listing-branches) to output a menu of options grouped by Shortcut ticket workflow state. The syntax follows:
+
+```
+git-sc checkout [options]
+```
+
+Where options can be one of:
+
+- `-a` or `--all` - tells git-sc to list all branches, even ones whose tickets pertain to Shortcut workflow states that are considered to be 'done'.
+
+Unlike `git checkout` no branch name is given to this command. Instead git-sc will present a menu followed by a prompt for branch index:
+
+```
+> git-sc checkout
+Collecting branches and searching Shortcut...
+Enter a branch number to checkout that branch, or ^C to cancel
+
+Ready for Prioritization
+------------------------
+1: >>> ch12345/some-cool-feature <<<
+2: ch23456/another-coolfeature
+
+Blocked/Paused
+--------------
+3: ch34567/a-third-cool-feature
+
+Scheduled for Dev
+-----------------
+4: ch45678/an-unfortunate-bug
+
+In Development
+--------------
+5: ch56789/another-unfortunate-bug
+6: ch67890/a-doozy-of-a-bug
+7: ch13579/a-chore-that-must-get-done
+
+# | ^C to cancel: 3
+Checked out ch34567/a-third-cool-feature
+```
+
 ### Deleting a Branch
 
 The `git-sc delete` commands allows you to delete local git branches based on the desired Shortcut ticket state and/or ownership. The syntax follows:

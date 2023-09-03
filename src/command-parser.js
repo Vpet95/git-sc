@@ -7,6 +7,7 @@ import { initializeGitClient } from "./git-lib/git-client.js";
 import {
   initApp,
   createBranch,
+  checkout,
   storyIdToBranchNames,
   deleteBranch,
   cleanBranches,
@@ -108,6 +109,20 @@ then in the home directory. If no valid config file is found, git-sc will exit.`
       )
       .action((options) => {
         listBranches(options.all);
+      });
+
+    const checkoutCommand = new commander.Command("checkout");
+    checkoutCommand
+      .option(
+        "-a, --all",
+        "Include all branches in the listing output. By default branches pertaining to completed shortcut tickets will be excluded from output.",
+        false
+      )
+      .description(
+        "lists local branches in a menu, organized by Shortcut ticket workflow state, allowing checkout by number"
+      )
+      .action((options) => {
+        checkout(options.all);
       });
 
     const deleteCommand = new commander.Command("delete");
@@ -236,6 +251,7 @@ then in the home directory. If no valid config file is found, git-sc will exit.`
       isDefault: true,
     });
     program.addCommand(branchCommand);
+    program.addCommand(checkoutCommand);
     program.addCommand(deleteCommand);
     program.addCommand(cleanCommand);
     program.addCommand(openCommand);
