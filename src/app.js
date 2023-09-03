@@ -15,6 +15,7 @@ import {
   NOTFOUND_DELETE,
   NOTFOUND_SKIP,
   FORMAT_TICKET_ID,
+  CHECKOUT_PROMPT,
 } from "./constants.js";
 import { getGitClient } from "./git-lib/git-client.js";
 import {
@@ -185,13 +186,16 @@ export const createBranch = async (storyId) => {
   createNewBranch(generateName(storyId, story.name), assertSuccess);
 };
 
-export const listBranches = async (all) => {
+const collectAndGroupBranches = async (all) => {
   const git = getGitClient();
   const config = getConfig();
 
   const showAll = all || !config.branchOptions.excludeDoneWork;
 
   const branchNames = git.listBranches();
+  const currentBranch = git.getCurrentBranchName();
+
+  console.log("Collecting branches and searching Shortcut...");
 
   // groups of { [workflow id]: { workflowName: "string", branches: ["list of branch names"]}}
   const workflowGroups = {};
@@ -238,18 +242,124 @@ export const listBranches = async (all) => {
     if (pos !== null) sortedByPosition[pos] = workflowGroups[key];
   }
 
-  if (sortedByPosition.length) console.log("\n");
+  // since each entry in sortedByPosition is derived from the workflow
+  // state positions on Shortcut, we can be missing certain indices
+  return {
+    workflowGroups,
+    sortedByPosition: sortedByPosition.filter((g) => Boolean(g)),
+    currentBranch,
+  };
+};
+
+const listBranchesInner = (
+  workflowGroups,
+  sortedByPosition,
+  currentBranch,
+  showHeaders,
+  numberItems
+) => {
+  if (sortedByPosition.length) console.log("");
+
+  // 1-based for ease of use
+  let branchIndex = 1;
 
   // the culmination of this
-  for (const group of sortedByPosition.filter((g) => Boolean(g))) {
-    console.log(underline(group.workflowName));
-    console.log(`${group.branches.join("\n")}\n`);
+  for (const group of sortedByPosition) {
+    if (showHeaders) {
+      console.log(underline(group.workflowName));
+    }
+
+    for (const branch of group.branches) {
+      const isCurrentBranch = currentBranch === branch;
+      console.log(
+        `${numberItems ? `${branchIndex++}: ` : ""}${
+          isCurrentBranch ? ">>> " : ""
+        }${branch}${isCurrentBranch ? " <<<" : ""}`
+      );
+    }
+
+    if (showHeaders) {
+      // print a new line between groupings
+      console.log("");
+    }
   }
 
   const nullGroup = workflowGroups["-1"];
   if (nullGroup) {
-    console.log(underline(nullGroup.workflowName));
-    console.log(`${nullGroup.branches.join("\n")}\n`);
+    if (showHeaders) {
+      console.log(underline(nullGroup.workflowName));
+    }
+
+    for (const branch of nullGroup.branches) {
+      console.log(`${numberItems ? `${branchIndex++}: ` : ""}${branch}`);
+    }
+
+    if (showHeaders) {
+      // print a new line between groupings
+      console.log("");
+    }
+  }
+};
+
+export const listBranches = async (
+  all,
+  showHeaders = true,
+  numberItems = false
+) => {
+  const { workflowGroups, sortedByPosition, currentBranch } =
+    await collectAndGroupBranches(all);
+
+  listBranchesInner(
+    workflowGroups,
+    sortedByPosition,
+    currentBranch,
+    showHeaders,
+    numberItems
+  );
+};
+
+export const checkout = async (all) => {
+  const { workflowGroups, sortedByPosition, currentBranch } =
+    await collectAndGroupBranches(all);
+
+  console.log("Enter a branch number to checkout that branch, or ^C to cancel");
+
+  listBranchesInner(
+    workflowGroups,
+    sortedByPosition,
+    currentBranch,
+    true,
+    true
+  );
+
+  const nullGroup = workflowGroups["-1"];
+
+  const rawBranchList = [
+    ...sortedByPosition.reduce((acc, group) => [...acc, ...group.branches], []),
+    ...(nullGroup ? nullGroup.branches : []),
+  ];
+
+  const resp = prompt(CHECKOUT_PROMPT);
+
+  if (resp === null || resp.trim().length === 0) {
+    console.log("Ok, canceled");
+    return null;
+  } else if (isNaN(resp)) {
+    console.error("invalid number - please try again");
+    return null;
+  }
+
+  // subtract one to convert back into an array index
+  const branchIndex = parseInt(resp.trim(), 10) - 1;
+  const branchName = rawBranchList[branchIndex];
+
+  if (branchName === currentBranch) {
+    console.log(`${branchName} is already checked out.`);
+  } else {
+    const git = getGitClient();
+    git.checkout({ branchName }, assertSuccess);
+
+    console.log(`Checked out ${git.getCurrentBranchName()}`);
   }
 };
 
